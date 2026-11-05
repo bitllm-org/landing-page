@@ -9,6 +9,12 @@
     "binding": "ASSETS",
     "run_worker_first": ["/network.json"]
   },
+  "kv_namespaces": [
+    {
+      "binding": "NETWORK",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ],
   "routes": [
     { "pattern": "bitllm.org", "custom_domain": true },
     { "pattern": "www.bitllm.org", "custom_domain": true }

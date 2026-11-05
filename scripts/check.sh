@@ -41,5 +41,9 @@ grep -q '"directory": "./public"' wrangler.jsonc || {
   echo "check: wrangler.jsonc must publish ./public" >&2
   exit 1
 }
+grep -q '"binding": "NETWORK"' wrangler.jsonc || {
+  echo "check: wrangler.jsonc must bind the NETWORK KV namespace" >&2
+  exit 1
+}
 
 echo "check: ok"
