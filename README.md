@@ -31,24 +31,35 @@ Keep `public/llms.txt` in step with the flags and error messages in
 [bitllm-org/bitllm](https://github.com/bitllm-org/bitllm): it is the file agents follow when
 setting BitLLM up.
 
-## First-time Cloudflare setup
+## Cloudflare setup
 
-The repository is wired for a Cloudflare Worker named `bitllm-landing` on the `bitllm.org` zone.
-Two things are needed.
+The deploy publishes a Worker named `bitllm-landing`. Until the secrets exist the deploy job logs a
+warning and skips, so `main` stays green.
 
 1. **GitHub secrets.** Add these repository secrets under Settings > Secrets and variables >
    Actions:
 
    | secret | value |
    |---|---|
-   | `CLOUDFLARE_API_TOKEN` | an API token with Workers Scripts:Edit, Zone:Workers Routes:Edit and Zone:Zone:Read on the `bitllm.org` zone |
-   | `CLOUDFLARE_ACCOUNT_ID` | the account id from the Cloudflare dashboard |
+   | `CLOUDFLARE_API_TOKEN` | an API token with Workers Scripts:Edit and Zone:Workers Routes:Edit on the `bitllm.org` zone |
+   | `CLOUDFLARE_ACCOUNT_ID` | the BitLLM account id from the Cloudflare dashboard |
 
-2. **DNS.** The first deploy attaches `bitllm.org` and `www.bitllm.org` as Worker custom domains.
-   Delete the old proxied A, AAAA or CNAME records for those two names first, or the attach fails
-   with a record conflict. The Worker then creates the records it needs.
+2. **Custom domains.** `wrangler.jsonc` has no routes yet: the Worker deploys to
+   `bitllm-landing.<account>.workers.dev`. After the `bitllm.org` zone moves to the BitLLM account,
+   add the two custom domains there:
 
-To deploy by hand before the secrets exist:
+   ```jsonc
+   "routes": [
+     { "pattern": "bitllm.org", "custom_domain": true },
+     { "pattern": "www.bitllm.org", "custom_domain": true }
+   ]
+   ```
+
+   Attaching them before the transfer would take the live site away from the old host early. When
+   they are attached, delete any old proxied A, AAAA or CNAME record for the same two names first,
+   or the attach fails with a record conflict; the Worker then creates the records it needs.
+
+To deploy by hand:
 
 ```sh
 npx wrangler@4 login
@@ -61,7 +72,7 @@ bitllm.org used to be a directory served by `python3 -m http.server` on the boot
 synced from `site/` in bitllm-org/bitllm. Once the Worker is live, that server and the
 `data.bitllm.org` hostname can go. `boot.bitllm.org` is a separate tunnel; see
 [docs/bootstrap.md](https://github.com/bitllm-org/bitllm/blob/main/docs/bootstrap.md) for retiring
-it once a GPU host answers as a seed.
+it once a public seed answers.
 
 ## License
 

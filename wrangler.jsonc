@@ -7,9 +7,8 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
-  },
-  "routes": [
-    { "pattern": "bitllm.org", "custom_domain": true },
-    { "pattern": "www.bitllm.org", "custom_domain": true }
-  ]
+  }
+  // The bitllm.org and www.bitllm.org custom domains are attached after the
+  // zone moves to the BitLLM Cloudflare account. Attaching them now would take
+  // the live site away from the old host before the transfer.
 }
