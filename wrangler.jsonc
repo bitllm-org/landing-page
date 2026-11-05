@@ -6,17 +6,9 @@
   "workers_dev": true,
   "assets": {
     "directory": "./public",
-    "binding": "ASSETS",
-    "run_worker_first": ["/network.json"]
-  },
-  "kv_namespaces": [
-    {
-      "binding": "NETWORK",
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
-    }
-  ],
-  "routes": [
-    { "pattern": "bitllm.org", "custom_domain": true },
-    { "pattern": "www.bitllm.org", "custom_domain": true }
-  ]
+    "binding": "ASSETS"
+  }
+  // The bitllm.org and www.bitllm.org custom domains are attached after the
+  // zone moves to the BitLLM Cloudflare account. Attaching them now would take
+  // the live site away from the old host before the transfer.
 }
