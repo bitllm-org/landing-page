@@ -1,33 +1,36 @@
 // The static site is uploaded as Worker assets. Only /network.json reaches
 // this code; every other request is served from public/ by Cloudflare.
 //
-// The bootstrap node writes the map aggregate into the NETWORK KV namespace
-// once a minute (scripts/network-kv.sh in bitllm-org/bitllm). Until the first
-// upload, the page gets a valid empty snapshot and shows no nodes.
+// The live map data is generated on the bootstrap machine and published at
+// data.bitllm.org/network.json. Proxying it here keeps the static deploy
+// independent of the data and avoids a browser CORS requirement on the origin.
+const NETWORK_URL = "https://data.bitllm.org/network.json";
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === "/network.json") {
-      let body = await env.NETWORK.get("network");
-      if (!body) {
-        body = JSON.stringify({
-          updated: new Date().toISOString(),
-          nodes: 0,
-          unlocated: 0,
-          cell_km: 156,
-          models: [],
-          cells: [],
-          versions: {},
+      try {
+        const upstream = await fetch(NETWORK_URL, { cf: { cacheTtl: 0 } });
+        if (!upstream.ok) throw new Error("upstream " + upstream.status);
+        return new Response(upstream.body, {
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "no-store",
+            "access-control-allow-origin": "*",
+          },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: String(err) }), {
+          status: 502,
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "no-store",
+            "access-control-allow-origin": "*",
+          },
         });
       }
-      return new Response(body, {
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-          "cache-control": "no-store",
-          "access-control-allow-origin": "*",
-        },
-      });
     }
 
     return env.ASSETS.fetch(request);
