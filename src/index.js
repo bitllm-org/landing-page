@@ -1,8 +1,8 @@
 // The static site is uploaded as Worker assets. Only /network.json reaches
 // this code; every other request is served from public/ by Cloudflare.
 //
-// The bootstrap machine writes the map aggregate into the NETWORK KV
-// namespace every two minutes (scripts/network-kv.sh in bitllm-org/bitllm).
+// An always-on node writes the map aggregate into the NETWORK KV namespace
+// every two minutes (scripts/network-kv.sh in bitllm-org/bitllm).
 // Until the first upload the page gets a valid empty snapshot and shows no
 // nodes. Keeping the data in KV means the machine never has to accept
 // inbound requests.
