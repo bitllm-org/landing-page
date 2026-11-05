@@ -35,8 +35,8 @@ setting BitLLM up.
 ## The live map
 
 `public/index.html` fetches `/network.json` once a minute. The Worker answers that path from the
-`NETWORK` KV namespace, so the static upload never overwrites the live data and the bootstrap
-machine never accepts inbound requests. The machine runs `scripts/network-kv.sh` from
+`NETWORK` KV namespace, so the static upload never overwrites the live data and the node that
+uploads it never accepts inbound requests. An always-on node runs `scripts/network-kv.sh` from
 [bitllm-org/bitllm](https://github.com/bitllm-org/bitllm), which copies its node's `GET /network`
 into KV every two minutes. Two minutes keeps 720 writes a day, under the KV free tier limit of
 1,000. If the key is empty the Worker returns a valid empty snapshot and the page says that no
@@ -72,8 +72,9 @@ Three things need to exist in the Cloudflare account before the first deploy wor
    Delete the old proxied A, AAAA or CNAME records for those two names first, or the attach fails
    with a record conflict. The Worker then creates the records it needs.
 
-The bootstrap machine also needs `CLOUDFLARE_ACCOUNT_ID` and a token with Workers KV
-Storage:Edit to upload `network.json`. That token belongs on the machine, not in this repository.
+The machine that runs the map uploader also needs `CLOUDFLARE_ACCOUNT_ID` and a token with
+Workers KV Storage:Edit to write `network.json`. That token belongs on the machine, not in this
+repository.
 
 To deploy by hand before the secrets exist:
 
@@ -87,7 +88,9 @@ npx wrangler@4 deploy
 bitllm.org used to be a directory served by `python3 -m http.server` on the bootstrap machine,
 synced from `site/` in bitllm-org/bitllm. Once the Worker is live, that server, its sync timer and
 the `data.bitllm.org` hostname can all go. The machine keeps only the KV uploader.
-`boot.bitllm.org` is a separate tunnel and is not affected.
+`boot.bitllm.org` is a separate tunnel; see
+[docs/bootstrap.md](https://github.com/bitllm-org/bitllm/blob/main/docs/bootstrap.md) for retiring
+it once direct seeds are live.
 
 ## License
 

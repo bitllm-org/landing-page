@@ -404,8 +404,8 @@ document.addEventListener("click", e => {
   else requestAnimationFrame(loop);
   addEventListener("resize", () => { size(); linkUp(); if (still) draw(1.4); });
 })();
-// Figure 2, the live node map. Reads network.json, which the bootstrap
-// machine refreshes every minute from its node's GET /network (counts per
+// Figure 2, the live node map. Reads network.json, which an always-on node
+// refreshes every two minutes from its node's GET /network (counts per
 // model and per ~156 km cell, no peer ids). Cells close together on screen
 // merge into one circle, so a crowded region reads as one larger number
 // rather than a pile of dots. Nodes without a declared location get their
