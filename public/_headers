@@ -1,2 +1,5 @@
 /install.ps1
   Content-Type: text/plain; charset=utf-8
+
+/fonts/*
+  Cache-Control: public, max-age=604800
