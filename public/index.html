@@ -92,7 +92,6 @@
       <div class="legend">
         <span><i class="share"></i> serving node</span>
         <span><i class="unloc"></i> no declared location</span>
-        <span><i class="you"></i> you, when you join</span>
       </div>
     </div>
 
@@ -322,7 +321,7 @@ document.addEventListener("click", e => {
       if (picked === key) c.classList.add("on");
     }
     if (data.unlocated) {
-      const n = data.unlocated, x = 30, y = 122, key = "unlocated";
+      const n = data.unlocated, x = 64, y = 122, key = "unlocated";
       const text = n + (n === 1 ? " node has" : " nodes have") + " not declared a location, so they are counted here and not placed on the map.";
       const c = el("circle", { class: "u", cx: x, cy: y, r: r(n), tabindex: 0, role: "button", "aria-label": text });
       c.addEventListener("click", () => show({ key, text }, c));
