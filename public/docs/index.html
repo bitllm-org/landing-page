@@ -88,7 +88,7 @@
     <p>This split is deliberate. One seed is enough to join, but it must not be the only relay: relay capacity should grow with the number of public nodes, not with DNS edits. Every public node announces <code>relay=true</code>; NATed nodes add those peers to their autorelay candidate set alongside the seeds.</p>
 
     <h2 id="first-contact">First contact</h2>
-    <p>A node with no <code>--bootstrap</code> resolves <code>/dnsaddr/bootstrap.bitllm.org</code>. Each <code>dnsaddr=</code> TXT record at that name is one seed multiaddr, so seeds can be added or retired without a release. The node also carries the old <code>boot.bitllm.org</code> tunnel as a literal fallback until the DNS seed list answers reliably. A <code>--bootstrap</code> value that names a peer directly is a <strong>join code</strong>; it works even when DNS does not.</p>
+    <p>A node with no <code>--bootstrap</code> resolves <code>/dnsaddr/bootstrap.bitllm.org</code>. Each <code>dnsaddr=</code> TXT record at that name is one seed multiaddr, so seeds can be added or retired without a release. The production list currently names <code>seed1.bitllm.org</code> over TCP and QUIC. The node also carries the old <code>boot.bitllm.org</code> tunnel as a literal fallback for one more release. A <code>--bootstrap</code> value that names a peer directly is a <strong>join code</strong>; it works even when DNS does not.</p>
 
     <p>Two details matter at this step:</p>
     <ul>
