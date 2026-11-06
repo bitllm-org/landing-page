@@ -145,6 +145,15 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
   const NS = "http://www.w3.org/2000/svg";
   let data = null, picked = null;
 
+  // A GitHub workflow publishes every ten minutes and its runs can start late, so
+  // 15 minutes is an ordinary age and this allows for a missed run as well. The
+  // key expires an hour after the last write, which then reads as no snapshot.
+  const STALE_AFTER = 30 * 60 * 1000;
+  const isFresh = d => {
+    const t = d && d.updated ? new Date(d.updated).getTime() : NaN;
+    return !isNaN(t) && Date.now() - t < STALE_AFTER;
+  };
+
   const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
   const square = (cls, x, y, r, label) => el("rect", { class: cls, x: x - r, y: y - r, width: 2 * r, height: 2 * r, tabindex: 0, role: "button", "aria-label": label });
   const unitPx = () => (svg.getBoundingClientRect().width || 700) / 360;
@@ -170,8 +179,10 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
 
   function summary() {
     const d = data, models = d.models.length;
-    return d.nodes + (d.nodes === 1 ? " node" : " nodes") + " serving " + models + (models === 1 ? " model" : " models") +
+    if (!d.updated) return "No recent snapshot.";
+    const count = d.nodes + (d.nodes === 1 ? " node" : " nodes") + " serving " + models + (models === 1 ? " model" : " models") +
       (d.unlocated ? ", " + d.unlocated + " without a declared location" : "") + ".";
+    return isFresh(d) ? count : "From the last snapshot: " + count;
   }
 
   function show(what, shape) {
@@ -211,11 +222,13 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
     if (picked && !dots.querySelector(".on")) { picked = null; note.textContent = summary(); }
   }
 
+  const emptyText = () => data.updated ? "No model is online right now." : "No recent snapshot.";
+
   function table() {
     tbody.replaceChildren();
     if (!data.models.length) {
       const tr = tbody.insertRow(), td = tr.insertCell();
-      td.colSpan = 3; td.textContent = emptyText;
+      td.colSpan = 3; td.textContent = emptyText();
       return;
     }
     for (const m of data.models) {
@@ -228,7 +241,8 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
 
   function totals() {
     const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-    if (!data || !data.updated) {
+    // These sit under the live label, so they show only while the snapshot is fresh.
+    if (!isFresh(data)) {
       for (const id of ["stat-nodes", "stat-models", "stat-free", "stat-slots"]) set(id, "-");
       return;
     }
@@ -242,11 +256,11 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
 
   function freshness() {
     const d = data, t = d.updated ? new Date(d.updated) : null;
-    const known = t && !isNaN(t), fresh = known && Date.now() - t.getTime() < 30 * 60 * 1000;
-    when.textContent = known ? "// updated " + t.toISOString().slice(11, 16) + " UTC" + (fresh ? "" : ", stale") : "// no snapshot yet";
+    const known = t && !isNaN(t), fresh = isFresh(d);
+    when.textContent = known ? "// updated " + t.toISOString().slice(11, 16) + " UTC" + (fresh ? "" : ", stale") : "// no recent snapshot";
     document.getElementById("map-live").classList.toggle("off", !fresh);
-    document.getElementById("models-meta").textContent = fresh ? "// online right now" : "// from the last snapshot";
-    if (!known) status(false, "No snapshot yet");
+    document.getElementById("models-meta").textContent = fresh ? "// online right now" : known ? "// from the last snapshot" : "// no recent snapshot";
+    if (!known) status(false, "No recent snapshot");
     else if (!fresh) status(false, "Snapshot is stale");
     else status(d.nodes > 0, d.nodes + (d.nodes === 1 ? " node" : " nodes") + " serving " + d.models.length + (d.models.length === 1 ? " model" : " models"));
   }
@@ -261,18 +275,24 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
       totals();
       freshness();
       if (!picked) note.textContent = summary();
-      draw(); table(); renderModels(d.models);
+      draw(); table(); renderModels(d.models, emptyText());
     } catch (e) {
       if (!data) {
         note.textContent = "Live data is not available right now. Every node still answers GET /network locally.";
         when.textContent = "// offline";
+        document.getElementById("models-meta").textContent = "// offline";
         status(false, "Live data unavailable");
         const tr = tbody.insertRow(0), td = tr.insertCell();
         tbody.replaceChildren(tr);
         td.colSpan = 3; td.textContent = "Live data is not available right now.";
         totals();
         renderModels([], "Live data is not available right now.");
-      } else freshness();
+      } else {
+        // Keep the map, but the snapshot keeps ageing while reads fail.
+        totals();
+        freshness();
+        if (!picked) note.textContent = summary();
+      }
     }
   }
   load(); setInterval(load, 60000);
