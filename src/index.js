@@ -24,8 +24,9 @@ export default {
       return new Response(body, {
         headers: {
           "content-type": "application/json; charset=utf-8",
-          // The publisher writes every two minutes; a minute of cache keeps
-          // the page current without turning every visitor into a KV read.
+          // The publisher writes every ten to fifteen minutes; a minute of
+          // cache keeps the page current without turning every visitor into a
+          // KV read.
           "cache-control": "public, max-age=60",
           "access-control-allow-origin": "*",
         },
@@ -39,10 +40,15 @@ export default {
   // is the dependable trigger: it asks for a run whenever the KV snapshot has
   // gone stale. A duplicate run is harmless, the workflow serialises itself.
   async scheduled(controller, env, ctx) {
-    await dispatchIfStale(env);
+    const at = new Date().toISOString();
+    const outcome = await dispatchIfStale(env);
+    // One small key, one write per tick: enough to tell whether the cron runs
+    // at all and what it decided. The map itself keeps its own budget.
+    ctx.waitUntil(env.NETWORK.put("cron", JSON.stringify({ at, outcome })));
   },
 };
 
+// Returns what it did, for the probe the cron writes back to KV.
 async function dispatchIfStale(env) {
   let updated = 0;
   try {
@@ -51,7 +57,8 @@ async function dispatchIfStale(env) {
   } catch {
     updated = 0;
   }
-  if (Date.now() - updated < STALE_MS) return;
+  const age = Math.round((Date.now() - updated) / 1000);
+  if (Date.now() - updated < STALE_MS) return `fresh ${age}s`;
 
   const res = await fetch(
     `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`,
@@ -67,5 +74,10 @@ async function dispatchIfStale(env) {
       body: JSON.stringify({ ref: "main" }),
     },
   );
-  if (!res.ok) console.error("map dispatch failed", res.status, await res.text());
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("map dispatch failed", res.status, text);
+    return `failed ${res.status} ${text.slice(0, 80)}`;
+  }
+  return `dispatched ${age}s`;
 }
