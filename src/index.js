@@ -1,6 +1,7 @@
-// The site is static, except for /network.json: a snapshot of one node's
-// GET /network, written to KV by scripts/network-kv.sh in the node repo.
-// Everything else is served from public/ by the assets binding.
+// A request that matches a file in public/ never reaches this code: the assets
+// layer answers it, so the headers on those files live in public/_headers. This
+// code answers /network.json, a snapshot of one node's GET /network that a
+// scheduled job in the node repo writes to KV, and anything no file matches.
 const REPO = "bitllm-org/bitllm";
 const WORKFLOW = "network-map.yml";
 // The workflow publishes every ten minutes. Only dispatch when the snapshot
@@ -16,22 +17,47 @@ const EMPTY = JSON.stringify({
   versions: {},
 });
 
+const JSON_HEADERS = {
+  "content-type": "application/json; charset=utf-8",
+  "access-control-allow-origin": "*",
+};
+
+async function network(request, env, ctx) {
+  const cache = caches.default;
+  // One entry per host, so a query string cannot force a KV read.
+  const key = new Request(new URL("/network.json", request.url).href);
+  const hit = await cache.match(key).catch(() => undefined);
+  if (hit) return hit;
+
+  let body;
+  try {
+    body = (await env.NETWORK.get("network")) ?? EMPTY;
+  } catch (err) {
+    console.error("network.json: KV read failed:", err);
+    // The page treats any status but 2xx as "live data unavailable" and keeps
+    // what it already has. Not cached, so the next request tries KV again.
+    return new Response(
+      JSON.stringify({ error: "The network snapshot is not available right now." }),
+      {
+        status: 503,
+        headers: { ...JSON_HEADERS, "cache-control": "no-store", "retry-after": "60" },
+      },
+    );
+  }
+
+  // The job writes every ten to fifteen minutes. A minute at the edge keeps the page
+  // current without turning every visitor into a KV read.
+  const response = new Response(body, {
+    headers: { ...JSON_HEADERS, "cache-control": "public, max-age=60" },
+  });
+  ctx.waitUntil(cache.put(key, response.clone()).catch(() => {}));
+  return response;
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
-    if (pathname === "/network.json") {
-      const body = (await env.NETWORK.get("network")) ?? EMPTY;
-      return new Response(body, {
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-          // The publisher writes every ten to fifteen minutes; a minute of
-          // cache keeps the page current without turning every visitor into a
-          // KV read.
-          "cache-control": "public, max-age=60",
-          "access-control-allow-origin": "*",
-        },
-      });
-    }
+    if (pathname === "/network.json") return network(request, env, ctx);
     return env.ASSETS.fetch(request);
   },
 
