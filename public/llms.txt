@@ -94,7 +94,9 @@ Common defaults: vLLM 8000, SGLang 30000, llama.cpp 8080, Ollama 11434, LM Studi
 curl -s http://127.0.0.1:PORT/v1/models
 ```
 
-Map that local id to a network name. Use a name from the table below when the weights match exactly; if they do not, ask the user before choosing a new name, because one network name must mean one set of weights.
+Map that local id to a network name. A public model uses its **exact Hugging Face repo id** — slash and case as published — so independent hosts serving the same repo match and can replace each other. A quant or fine-tune uses the repo id of the actual weights plus a suffix, for example `Qwen/Qwen3.8-Flash-Next-fp4-alesha`. A private or brand-new model can use any stable name; nothing needs to be registered first.
+
+The table below lists reference names the beta has used. It is a convenience, not a gate.
 
 | network name | weights |
 |---|---|
@@ -103,19 +105,23 @@ Map that local id to a network name. Use a name from the table below when the we
 | `qwen3.8-flash-next-fp4-alesha` | Qwen3.8 Flash-Next, NVIDIA FP4-Local quant, alesha uncensored fine-tune |
 | `qwen3.8-flash-next-nvfp4-lil` | Qwen3.8 Flash-Next, local-inference-lab NVFP4-MXFP8-CSF-QAD quant, fixed sampling (NVIDIA Flare) |
 
-Names are `<model>[-<quant>][-<source>]`: quant and source are left out for official weights as released (see README for the full rule).
+Names are `<model>[-<quant>][-<source>]`; the model part keeps the Hub id's case and slashes. One network name must mean one set of weights. If the server's id already is the right network name, do not pass `--model` at all.
 
 Start sharing. Only one node runs per machine, so stop a node started in Task 2 first (`pkill -x bitllm`):
 
 ```sh
-nohup bitllm --upstream http://127.0.0.1:PORT/v1 --model LOCAL_ID=NETWORK_NAME --concurrency 2 > ~/.bitllm.log 2>&1 &
+nohup bitllm --upstream http://127.0.0.1:PORT/v1 --concurrency 2 > ~/.bitllm.log 2>&1 &
 until curl -sf http://127.0.0.1:7778/status > /dev/null; do sleep 1; done
 curl -s http://127.0.0.1:7778/status
 ```
 
+Without `--model`, every model the server reports is shared under exactly that id, and the node re-reads the list every 30 seconds while it runs: a model added to vLLM later appears without restarting BitLLM. Use `--model LOCAL_ID=NETWORK_NAME` only to rename a local id or to share a subset; that pins the mapping.
+
 Check: `serving` in the status lists NETWORK_NAME. Set `--concurrency` to how many parallel requests the server can take without slowing the user down. Requests for a model the user shares are answered by their own server and never leave the machine.
 
-Useful flags: `--upstream-key KEY` if the server needs an API key (or set `BITLLM_UPSTREAM_KEY`, which keeps it out of the process list); `--max-tokens N` caps tokens per peer request (default 32768); `--free-daily N` sets a daily quota per member (default 0, no limit); `--open` also serves uninvited nodes on spare slots. `--allow PEER_ID` (repeatable) serves only the listed nodes and refuses all others. `--ipv6=false` listens on IPv4 only: use it if the machine has a public IPv6 address and the user does not want the p2p port reachable from the internet (cost: IPv6-only peers cannot dial it directly, so more traffic goes through relays). `--weights NAME=HASH` states which weights the server loads (the hash comes from `bitllm hash-model DIR`). With a vLLM server, `--audit-serve` offers this node as an auditor for other nodes' spot checks (off by default). `--location LAT,LON` declares a coarse location for `GET /network` (the public map is offline for now): only ask the user for this, never guess it; any point in their city is enough, and only a ~150 km cell is announced.
+Useful flags: `--upstream-key KEY` if the server needs an API key (or set `BITLLM_UPSTREAM_KEY`, which keeps it out of the process list); `--max-tokens N` caps tokens per peer request (default 32768); `--free-daily N` sets a daily quota per member (default 0, no limit); `--open` also serves uninvited nodes on spare slots. `--allow PEER_ID` (repeatable) serves only the listed nodes and refuses all others. `--ipv6=false` listens on IPv4 only: use it if the machine has a public IPv6 address and the user does not want the p2p port reachable from the internet (cost: IPv6-only peers cannot dial it directly, so more traffic goes through relays). `--weights NAME=HASH` states which weights the server loads (the hash comes from `bitllm hash-model DIR`). With a vLLM server, `--audit-serve` offers this node as an auditor for other nodes' spot checks (off by default). `--location LAT,LON` declares a coarse location for the live map at https://bitllm.org: only ask the user for this, never guess it; any point in their city is enough, and only a ~150 km cell is announced.
+
+If the machine can accept inbound TCP and UDP 4001, it can also help as a **public relay** — DHT server and relay, no DNS record: `--public --port 4001 --announce /ip4/PUBLIC_IP/tcp/4001 --announce /ip4/PUBLIC_IP/udp/4001/quic-v1`. NATed nodes discover it through its announce, so relay capacity grows with the network.
 
 ## Task 4: keep it running
 
@@ -172,5 +178,6 @@ To become a member the user needs an Ethereum address, an invite from a member, 
 ## More
 
 - Human-readable guide: https://bitllm.org
+- Full architecture: https://bitllm.org/docs/
 - README: https://github.com/bitllm-org/bitllm#readme
 - 中文说明: https://github.com/bitllm-org/bitllm/blob/main/README.zh.md

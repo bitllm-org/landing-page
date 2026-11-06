@@ -3,7 +3,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-FILES="public/index.html public/llms.txt public/install.sh public/install.ps1"
+FILES="public/index.html public/docs/index.html public/llms.txt public/install.sh public/install.ps1"
 for f in $FILES; do
   [ -s "$f" ] || { echo "check: $f is missing or empty" >&2; exit 1; }
 done
@@ -19,19 +19,20 @@ python3 - <<'PY'
 import pathlib, re, sys
 
 base = pathlib.Path("public")
-html = (base / "index.html").read_text(encoding="utf-8")
-refs = re.findall(r'(?:href|src)="([^"]+)"', html)
+pages = [base / "index.html", base / "docs" / "index.html"]
 missing = []
-for ref in refs:
-    if ref.startswith(("#", "http://", "https://", "mailto:", "data:")):
-        continue
-    path = ref.split("?")[0].split("#")[0].lstrip("/")
-    if not path:
-        continue
-    if not (base / path).exists():
-        missing.append(ref)
+for page in pages:
+    html = page.read_text(encoding="utf-8")
+    for ref in re.findall(r'(?:href|src)="([^"]+)"', html):
+        if ref.startswith(("#", "http://", "https://", "mailto:", "data:")):
+            continue
+        path = ref.split("?")[0].split("#")[0].lstrip("/")
+        if not path:
+            continue
+        if not (base / path).exists():
+            missing.append(f"{page}: {ref}")
 if missing:
-    print("check: index.html references files that are not here:", file=sys.stderr)
+    print("check: pages reference files that are not here:", file=sys.stderr)
     for ref in missing:
         print("  " + ref, file=sys.stderr)
     sys.exit(1)
