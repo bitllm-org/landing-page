@@ -370,7 +370,8 @@ document.addEventListener("click", e => {
       data = d;
       totals();
       const t = d.updated ? new Date(d.updated) : null;
-      when.textContent = t && !isNaN(t) ? "updated " + t.toISOString().slice(11, 16) + " UTC" : "no snapshot yet";
+      const fresh = t && !isNaN(t) && Date.now() - t.getTime() < 15 * 60 * 1000;
+      when.textContent = t && !isNaN(t) ? "updated " + t.toISOString().slice(11, 16) + " UTC" + (fresh ? "" : " · stale") : "no snapshot yet";
       if (!picked) note.textContent = summary();
       draw(); table();
     } catch (e) {
