@@ -11,7 +11,8 @@ setup page and lives in [bitllm-org/bitllm](https://github.com/bitllm-org/bitllm
 |---|---|
 | `public/index.html` | the landing page: live map, install commands, roles, model naming, access rules |
 | `public/docs/index.html` | the architecture page: discovery, connectivity, request path, receipts, audits, privacy |
-| `public/site.css` | the one dark stylesheet shared by both pages |
+| `public/site.css` | the one stylesheet shared by both pages; its tokens follow the dashboard |
+| `public/fonts/` | JetBrains Mono and Arimo, from [bitllm-org/branding](https://github.com/bitllm-org/branding), so every OS shows the same letters |
 | `public/world.svg` | the world outline behind the live map |
 | `public/favicon.svg`, `public/logo-128.png` | the mark, from [bitllm-org/branding](https://github.com/bitllm-org/branding) |
 | `public/llms.txt` | setup runbook for AI agents, served at https://bitllm.org/llms.txt |
@@ -30,7 +31,8 @@ or addresses. If the key is empty the page shows an empty network instead of fai
 
 ## Editing
 
-`main` is protected: open a pull request and let `check` pass. A merge deploys.
+`main` is protected: open a pull request and let `check` pass. A merge deploys once the repository
+secrets below are set; until then, deploy by hand.
 
 ```sh
 python3 -m http.server -d public 8000     # static preview
