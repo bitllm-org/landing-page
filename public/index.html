@@ -158,6 +158,7 @@
           <tbody id="map-models"><tr><td colspan="3">Loading...</td></tr></tbody>
         </table>
       </div>
+      <p class="note">Free slots in this table count a node once per model it serves, so a node with two models adds to both rows.</p>
       <p class="more"><a href="/docs/#map">How the map is built and what it does not reveal →</a></p>
     </section>
 
@@ -204,7 +205,7 @@ API key:   bitllm  (any value)</pre>
           </div>
           <div class="console gap">
             <div class="console-bar"><span>bitllm top</span><span>example</span></div>
-            <div class="console-body"><pre class="draw top" role="img" aria-label="Example of the bitllm top terminal view: peers, what this node serves, work exchanged, credit rate and the log."><span class="i">bitllm v0.4.6</span>   12D3KooWB…PFw2o   up 3h12m   peers 3   inflight 1
+            <div class="console-body"><pre class="draw top" role="img" aria-label="Example of the bitllm top terminal view: peers, what this node serves, work exchanged, credit rate and the log."><span class="i">bitllm v0.5.0</span>   12D3KooWB…PFw2o   up 3h12m   peers 3   inflight 1
 <span class="d">────────────────────────────────────────────────────────────</span>
 <span class="i">PEERS</span>                                            3 connected
   12D3KooWA…x7Qm2  out  direct  203.0.113.10
@@ -230,7 +231,7 @@ API key:   bitllm  (any value)</pre>
       <div class="duo">
         <div>
           <h3>Add a public relay</h3>
-          <p>A host with inbound TCP and UDP 4001 runs <code>--public</code> and serves a model. NATed nodes can then reserve on it.</p>
+          <p>A host with inbound TCP and UDP 4001 runs <code>--public</code>. It needs no model once the seeds run v0.5.0. NATed nodes can then reserve on it.</p>
         </div>
         <div>
           <div class="editor">
@@ -238,7 +239,6 @@ API key:   bitllm  (any value)</pre>
             <div class="code">
               <pre class="gutter" aria-hidden="true"></pre>
               <pre class="snip" data-hl>bitllm --public --port 4001 \
-  --upstream http://localhost:8000/v1 \
   --announce /ip4/203.0.113.11/tcp/4001 \
   --announce /ip4/203.0.113.11/udp/4001/quic-v1</pre>
             </div>
@@ -307,6 +307,18 @@ credits = prompt/4 + completion
           <p class="note">Not verified: that the named model ran, or the token counts.</p>
         </div>
       </div>
+
+      <p class="mini">Still central <span class="head-meta">// not in the request path</span></p>
+      <dl class="strip">
+        <dt>root key</dt>
+        <dd><span>One account sits at the top of the invite tree. Its address is built into the binary.</span></dd>
+        <dt>auto-update</dt>
+        <dd><span>Nodes install new releases from one GitHub repository, signed with keys built into the binary. --auto-update=false turns it off.</span></dd>
+        <dt>auditor</dt>
+        <dd><span>--audit uses a node the maintainers run by default. --auditor replaces it.</span></dd>
+        <dt>KV</dt>
+        <dd><span>A GitHub workflow writes this site's map to Cloudflare KV every ten minutes. The key expires one hour after the last write.</span></dd>
+      </dl>
       <p class="more"><a href="/docs/">Read the whole architecture →</a></p>
     </section>
 
@@ -319,7 +331,7 @@ credits = prompt/4 + completion
       <div class="grid three">
         <div class="card"><h3>Two APIs</h3><p>OpenAI and Anthropic requests on one local port.</p></div>
         <div class="card"><h3>bitllm top</h3><p>A live view of your node in the terminal.</p></div>
-        <div class="card"><h3>Self-update</h3><p>Verifies the checksum and restarts when idle, or at the next start on Windows. <code>--auto-update=false</code> turns it off.</p></div>
+        <div class="card"><h3>Self-update</h3><p>Updates only to a release signed with a key in the binary. Restarts when idle, or at the next start on Windows. <code>--auto-update=false</code> turns it off.</p></div>
         <div class="card"><h3>Credits</h3><p>Every job you serve earns credits.</p></div>
         <div class="card"><h3>--location</h3><p>Opt in to the map with a coarse cell of about 156 km.</p></div>
         <div class="card"><h3>--audit</h3><p>Opt-in spot checks on the peers that answer you.</p></div>
@@ -366,7 +378,7 @@ credits = prompt/4 + completion
       <ol class="rules">
         <li><span class="n">i</span><div><b>An invite gets you served on any free slot.</b> Uninvited nodes are served only when a server is idle, unless its owner opens it to everyone.</div></li>
         <li><span class="n">ii</span><div><b>There is no daily quota by default.</b> A server owner can set one.</div></li>
-        <li><span class="n">iii</span><div><b>Sharing makes you a contributor:</b> never limited by quota, and 10 invites instead of 3 once your nodes have served.</div></li>
+        <li><span class="n">iii</span><div><b>Sharing makes you a contributor:</b> 10 invites instead of 3 once your nodes have served, and no quota on a server that asked your node for a job in the last 7 days.</div></li>
       </ol>
 
       <div class="console gap">
@@ -376,9 +388,9 @@ credits = prompt/4 + completion
       </div>
 
       <div class="grid three gap">
-        <div class="card"><h3>Invites are signatures</h3><p>An Ethereum account signs an invite and nodes gossip it. A root can revoke an account, which also removes everyone it invited.</p></div>
-        <div class="card"><h3>The server reads the prompt</h3><p>Like any inference provider. Do not send secrets. Direct peers can see your IP; use a VPN if that matters.</p></div>
-        <div class="card"><h3>Nothing is verified yet</h3><p>A node can claim a model it does not serve. Audits are opt-in spot checks, not proof of weights. Credits have no monetary value today.</p></div>
+        <div class="card"><h3>Invites are signatures</h3><p>An Ethereum account signs an invite and nodes gossip it. A root can revoke an account. It and everyone it invited are then served like uninvited nodes.</p></div>
+        <div class="card"><h3>The server reads the prompt</h3><p>Like any inference provider. Do not send secrets. Peers can learn your IP from a direct connection or from the addresses hole punching sends; use a VPN if that matters.</p></div>
+        <div class="card"><h3>Nothing is verified yet</h3><p>A node can claim a model it does not serve. Audits are opt-in spot checks, not proof of weights. What credits will be worth is not decided yet.</p></div>
       </div>
     </section>
 
