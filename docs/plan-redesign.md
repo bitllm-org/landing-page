@@ -317,3 +317,12 @@ fact-check reading the source, not from running it.
    `modelNames()` caps it first. It could affect anyone sharing a server with many models.
 
 **Not in scope:** the Go module path, `bitllm top`.
+
+## As built
+
+- The same sections went from 863 to 637 words, not the 450 target. The total includes the new request path and drawing notes, and what remains is mostly the verbatim access rules, safety caveats and labels.
+- The mono subset also carries U+25A0-25FF, because the drawings use `▶`.
+- The dashboard's `.code pre` elements needed their own `font-family`: a bare `pre` gets the browser's `monospace`.
+- Model names offered in the page's commands must match a safe pattern, since anyone can announce any name.
+- `/fonts/*` is cached for a week.
+- Tag lines above card titles were removed. The titles already said it.
