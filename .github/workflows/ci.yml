@@ -22,6 +22,17 @@ jobs:
           node-version: 22
       - name: required files, local links, Worker syntax
         run: sh scripts/check.sh
+      - name: install.sh installs only what it could verify
+        run: sh scripts/test-install.sh
+
+  install-windows:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: install.ps1 installs only what it could verify
+        shell: powershell
+        run: .\scripts\test-install.ps1
 
   deploy:
     needs: check
