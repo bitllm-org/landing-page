@@ -735,8 +735,10 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
     }
     set("stat-nodes", data.nodes);
     set("stat-models", data.models.length);
-    set("stat-free", data.models.reduce((a, m) => a + (m.free || 0), 0));
-    set("stat-slots", data.models.reduce((a, m) => a + (m.max || 0), 0));
+    // Rows count a node once per model it serves, so prefer the node-level
+    // totals. Snapshots from older nodes do not have them yet.
+    set("stat-free", data.free ?? data.models.reduce((a, m) => a + (m.free || 0), 0));
+    set("stat-slots", data.max ?? data.models.reduce((a, m) => a + (m.max || 0), 0));
   }
 
   function freshness() {

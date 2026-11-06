@@ -63,7 +63,7 @@ A JSON reply with `choices` means it works. The response header `X-Bitllm-Peer` 
 
 Point the user's tools at it. The API key can be any string.
 
-- OpenAI-compatible clients (Cline, Continue, Aider, OpenCode, Cursor, openai SDKs): base URL `http://127.0.0.1:7778/v1`, API key `bitllm`, model `MODEL`.
+- OpenAI-compatible clients (Cline, Continue, Aider, OpenCode, openai SDKs): base URL `http://127.0.0.1:7778/v1`, API key `bitllm`, model `MODEL`.
 - Claude Code: the gateway also speaks the Anthropic Messages API.
 
 ```sh
@@ -121,7 +121,7 @@ Check: `serving` in the status lists NETWORK_NAME. Set `--concurrency` to how ma
 
 Useful flags: `--upstream-key KEY` if the server needs an API key (or set `BITLLM_UPSTREAM_KEY`, which keeps it out of the process list); `--max-tokens N` caps tokens per peer request (default 32768); `--free-daily N` sets a daily quota per member (default 0, no limit); `--open` also serves uninvited nodes on spare slots. `--allow PEER_ID` (repeatable) serves only the listed nodes and refuses all others. `--ipv6=false` listens on IPv4 only: use it if the machine has a public IPv6 address and the user does not want the p2p port reachable from the internet (cost: IPv6-only peers cannot dial it directly, so more traffic goes through relays). `--weights NAME=HASH` states which weights the server loads (the hash comes from `bitllm hash-model DIR`). With a vLLM server, `--audit-serve` offers this node as an auditor for other nodes' spot checks (off by default). `--location LAT,LON` declares a coarse location for the live map at https://bitllm.org: only ask the user for this, never guess it; any point in their city is enough, and only a ~150 km cell is announced.
 
-If the machine can accept inbound TCP and UDP 4001, it can also help as a **public relay** (DHT server and relay, no DNS record): `--public --port 4001 --announce /ip4/PUBLIC_IP/tcp/4001 --announce /ip4/PUBLIC_IP/udp/4001/quic-v1`. NATed nodes discover it through its announce, so relay capacity grows with the network.
+If the machine can accept inbound TCP and UDP 4001, it can also help as a **public relay** (DHT server and relay, no DNS record): `--public --port 4001 --upstream URL --announce /ip4/PUBLIC_IP/tcp/4001 --announce /ip4/PUBLIC_IP/udp/4001/quic-v1`. It must also serve a model, because only a serving node announces. NATed nodes discover it through that announce, so relay capacity grows with the network.
 
 ## Task 4: keep it running
 
