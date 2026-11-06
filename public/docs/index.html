@@ -4,30 +4,45 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Architecture — BitLLM</title>
+<title>Architecture: BitLLM_</title>
 <link rel="canonical" href="https://bitllm.org/docs/">
 <meta name="description" content="How BitLLM works: first contact, the DHT, gossip, relays and hole punching, the request path, signed receipts, access, auditing, privacy, and model naming.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/logo-128.png">
 <link rel="alternate" type="text/plain" href="/llms.txt" title="Setup steps for AI agents">
+<link rel="preload" href="/fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/jetbrains-mono-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
-
-<header class="site-head">
-  <div class="wrap">
-    <a class="brand" href="/">BitLLM<span class="cursor" aria-hidden="true">_</span></a>
-    <nav class="nav" aria-label="Site">
+<div class="window">
+  <div class="titlebar">
+    <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="win-title">bitllm <span class="sep">/</span> docs</span>
+    <nav class="tnav" aria-label="Site">
       <a href="/#network">Network</a>
-      <a href="/#use">Use it</a>
-      <a class="strong" href="/docs/">Docs</a>
-      <a class="opt" href="https://github.com/bitllm-org/branding">Brand</a>
-      <a href="https://github.com/bitllm-org/bitllm">Source</a>
+      <a href="/#use">Use</a>
+      <a href="/#features">Features</a>
+      <a href="/docs/" aria-current="page">Docs</a>
+      <a href="/#releases">Releases</a>
     </nav>
+    <a class="gh" href="https://github.com/bitllm-org/bitllm" aria-label="Source on GitHub: bitllm-org/bitllm">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span class="long">bitllm-org/bitllm</span><span class="short">source</span>
+      <span class="ver" data-version hidden></span>
+    </a>
   </div>
-</header>
 
-<main class="wrap docs">
+  <div class="page">
+    <header class="site-header">
+      <div class="brand">
+        <a class="wordmark" href="/">BitLLM<span class="caret" aria-hidden="true">_</span></a>
+        <span class="tagline">// how the network works</span>
+      </div>
+      <a class="peer" href="https://github.com/bitllm-org/bitllm">github.com/bitllm-org/bitllm</a>
+    </header>
+
+<main class="docs">
 
   <aside class="toc" aria-label="On this page">
     <span class="toc-title">contents</span>
@@ -51,12 +66,12 @@
 
   <article class="doc">
     <a class="back" href="/">← bitllm.org</a>
-    <h1>How BitLLM works</h1>
-    <p class="lede">One binary, four jobs: client, gateway, server and relay. This page describes every moving part — how a fresh install meets the network, how a request finds a GPU, what is signed, what is only claimed, and what happens when something dies.</p>
+    <h1><span class="prompt" aria-hidden="true">$</span><span>How BitLLM works</span></h1>
+    <p class="lede">One binary, four jobs: client, gateway, server and relay. This page describes every moving part: how a fresh install meets the network, how a request finds a GPU, what is signed, what is only claimed, and what happens when something dies.</p>
 
     <p>BitLLM is a peer-to-peer inference network for open models. There is no coordinator in the request path, no central queue, and no database of who served what. A node joins by finding one seed, then learns the rest from a Kademlia DHT and a gossip topic. The model names are ordinary strings; the network only routes on them. The binary is the same for everybody, and flags decide which hats it wears.</p>
 
-    <div class="note"><b>Short version.</b> Resolve one seed. Ask the DHT who serves a model. Open an encrypted stream — direct if the routers allow it, otherwise through a relay. Stream the tokens. Sign a receipt for the work. Everything else on this page is detail.</div>
+    <div class="note"><b>Short version.</b> Resolve one seed. Ask the DHT who serves a model. Open an encrypted stream, direct if the routers allow it and otherwise through a relay. Stream the tokens. Sign a receipt for the work. Everything else on this page is detail.</div>
 
     <h2 id="overview">Overview</h2>
     <p>Four loops run inside every node:</p>
@@ -123,7 +138,7 @@
     <h2 id="connectivity">Connectivity</h2>
     <p>Most nodes are behind NAT or CGNAT. A node that can accept inbound connections listens on TCP and QUIC (UDP) 4001. A node that cannot still participates:</p>
     <ol>
-      <li>It reserves a slot on a relay — the seeds first, then public relays discovered through gossip. The reservation is a libp2p circuit address.</li>
+      <li>It reserves a slot on a relay: the seeds first, then public relays discovered through gossip. The reservation is a libp2p circuit address.</li>
       <li>Peers dial the circuit address. The relay forwards the first bytes and never sees plaintext, because the stream is end-to-end encrypted.</li>
       <li>Both sides attempt hole punching. If the routers allow it, the connection upgrades to direct and the relay leaves the path. If not, the circuit stays for the life of the stream.</li>
     </ol>
@@ -172,7 +187,7 @@
       <li><strong>A private or brand-new model can use any stable name.</strong> Nothing is registered first: the node announces it, <code>GET /v1/models</code> lists it, and the dashboard lets a user pick it. <code>--model local=public</code> exists only for the case where the server's local id is not the name clients should use.</li>
     </ol>
 
-    <p>The naming pattern is <code>&lt;model&gt;[-&lt;quant&gt;][-&lt;source&gt;]</code>, joined with hyphens; the model part keeps the Hub id's case and slashes. Quant is the weight format when it is not the maker's release (<code>fp4</code>, <code>nvfp4</code>, <code>int4</code>, <code>q4_k_m</code>); source is who changed the weights (a fine-tune name, or the group that made the quant). How a server runs the model — vLLM or SGLang, context length, fixed sampling — does not change the name.</p>
+    <p>The naming pattern is <code>&lt;model&gt;[-&lt;quant&gt;][-&lt;source&gt;]</code>, joined with hyphens; the model part keeps the Hub id's case and slashes. Quant is the weight format when it is not the maker's release (<code>fp4</code>, <code>nvfp4</code>, <code>int4</code>, <code>q4_k_m</code>); source is who changed the weights (a fine-tune name, or the group that made the quant). How a server runs the model (vLLM or SGLang, context length, fixed sampling) does not change the name.</p>
 
     <p>No registry is required. The optional table in the README lists reference names the beta has used; it is a convenience, not a gate.</p>
 
@@ -199,7 +214,7 @@
     <h2 id="audits">Audits</h2>
     <p>A node can claim a model it does not serve. Auditing is an opt-in spot check, not a proof:</p>
     <ul>
-      <li>With <code>--audit</code>, about one request in 50 to a peer is followed by a canary request. Another node — the auditor — scores the answer token by token.</li>
+      <li>With <code>--audit</code>, about one request in 50 to a peer is followed by a canary request. Another node, the auditor, scores the answer token by token.</li>
       <li>The default auditor is a node run by the maintainers. <code>--auditor PEER_ID</code> replaces it; <code>--auditor none</code> drops it.</li>
       <li>A peer that keeps failing gets no requests for that model for 24 hours. <code>GET /audits</code> shows the results.</li>
       <li>It finds a server running a different model, and a coarse quant on greedy requests. It does not find a server that recognizes canaries, a quant swap on sampled requests only, or a light fine-tune swap. An auditor can lie in either direction. A shuffled control catches only an auditor that passes everything.</li>
@@ -249,7 +264,7 @@
     <p>Use a systemd unit (Linux) or a LaunchAgent (macOS) with restart-on-failure. Keep the data directory: it holds the peer identity, receipts, claims and quota state. A node that loses its data directory comes back as a new peer.</p>
 
     <h3>Updates</h3>
-    <p>A release build checks for a newer release 30 seconds after start and every 6 hours, verifies the binary against the release's <code>SHA256SUMS</code>, and restarts in place when the node is idle — same unit, same peer id. <code>--auto-update=false</code> disables it; <code>bitllm update</code> installs now. The previous binary is kept as <code>bitllm.prev</code>. Builds from source never update themselves.</p>
+    <p>A release build checks for a newer release 30 seconds after start and every 6 hours, verifies the binary against the release's <code>SHA256SUMS</code>, and restarts in place when the node is idle: same unit, same peer id. <code>--auto-update=false</code> disables it; <code>bitllm update</code> installs now. The previous binary is kept as <code>bitllm.prev</code>. Builds from source never update themselves.</p>
 
     <h3>Ports</h3>
     <p>4001 TCP and UDP is the p2p port. 7778 is the local gateway and listens on <code>127.0.0.1</code> only. The gateway refuses non-local <code>Host</code> headers, so a browser on the LAN cannot reach it by the machine's name.</p>
@@ -305,31 +320,28 @@
 
     <h3>Ports and files</h3>
     <ul>
-      <li><code>4001/tcp</code>, <code>4001/udp</code> — libp2p; inbound only on public nodes.</li>
-      <li><code>127.0.0.1:7778</code> — gateway and dashboard; never exposed.</li>
-      <li><code>~/.bitllm/</code> — peer key, receipts, claims, quota, update state. Keep it to keep the identity.</li>
+      <li><code>4001/tcp</code>, <code>4001/udp</code>: libp2p; inbound only on public nodes.</li>
+      <li><code>127.0.0.1:7778</code>: gateway and dashboard; never exposed.</li>
+      <li><code>~/.bitllm/</code>: peer key, receipts, claims, quota, update state. Keep it to keep the identity.</li>
     </ul>
 
     <p class="more"><a href="https://github.com/bitllm-org/bitllm">Source, README and deeper notes on GitHub →</a></p>
   </article>
 </main>
 
-<footer class="site-foot">
-  <div class="wrap">
-    <div>
-      <a class="brand" href="/">BitLLM<span class="cursor" aria-hidden="true">_</span></a>
-      <p>Peer-to-peer inference for open models. One binary, MIT licensed, no coordinator. The map is a snapshot; the network is the nodes.</p>
-    </div>
-    <nav class="foot-nav" aria-label="Footer">
-      <a href="/">Home</a>
-      <a href="/llms.txt">llms.txt</a>
-      <a href="https://github.com/bitllm-org/bitllm">Source</a>
-      <a href="https://github.com/bitllm-org/branding">Brand assets</a>
-      <a href="https://github.com/bitllm-org/bitllm/blob/main/README.zh.md">中文说明</a>
-      <a href="https://github.com/bitllm-org/landing-page">This site</a>
-    </nav>
   </div>
-</footer>
+
+  <footer class="site-footer">
+    <a class="fm" href="/">BitLLM_</a>
+    <span>Peer-to-peer inference for open models. One binary, MIT licensed, no coordinator.</span>
+    <a href="/">Home</a>
+    <a href="/llms.txt">llms.txt</a>
+    <a href="https://github.com/bitllm-org/branding">Brand assets</a>
+    <a href="https://github.com/bitllm-org/bitllm/blob/main/README.zh.md">中文说明</a>
+    <a href="https://github.com/bitllm-org/landing-page">This site</a>
+    <a class="right" href="https://github.com/bitllm-org/bitllm">github.com/bitllm-org/bitllm</a>
+  </footer>
+</div>
 
 </body>
 </html>
