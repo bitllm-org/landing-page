@@ -364,6 +364,8 @@ h3 { margin: 0 0 6px; font: 600 14px/1.4 var(--mono); letter-spacing: -.2px; }
 .map-card { border: 1px solid var(--line); background: var(--panel-2); }
 .live { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); }
 .live i { width: 6px; height: 6px; background: var(--green); box-shadow: 0 0 8px rgba(93, 219, 150, .8); animation: pulse 2.4s ease-in-out infinite; }
+.live.off { color: var(--sub); }
+.live.off i { background: var(--dim); box-shadow: none; animation: none; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 .map { padding: 8px 12px 0; }
 .map svg { display: block; width: 100%; height: auto; }
