@@ -277,7 +277,7 @@
 
     <h2 id="map">The map</h2>
     <p>Every node can produce an aggregate of the network at <code>GET /network</code>: counts per model, per version, and per ~156 km geohash cell, plus how many nodes did not declare a location. It contains no peer ids and no addresses.</p>
-    <p>The map at bitllm.org is a snapshot of one node's <code>/network</code>, copied into Cloudflare KV about every ten minutes by a scheduled GitHub workflow and served as <code>/network.json</code>. The uploader never accepts inbound requests. The page fetches the snapshot once a minute. Scheduled runs can run late, so a snapshot past 30 minutes is marked stale and the totals blank out. The key expires one hour after the last write, so a publisher that stops leaves no numbers rather than old ones, and the page shows an empty network instead of failing. Counts are for serving nodes only, so a client-only node does not appear.</p>
+    <p>The map at bitllm.org is a snapshot of one node's <code>/network</code>, copied into Cloudflare KV about every twenty minutes by a scheduled GitHub workflow and served as <code>/network.json</code>. The uploader never accepts inbound requests. The page fetches the snapshot once a minute. Scheduled runs can run late, so a snapshot past 30 minutes is marked stale and the totals blank out. The key expires one hour after the last write, so a publisher that stops leaves no numbers rather than old ones, and the page shows an empty network instead of failing. Counts are for serving nodes only, so a client-only node does not appear.</p>
     <p>Only operators who passed <code>--location</code> are placed. The rest are counted in the "no location" bucket. Nothing is inferred from IP addresses.</p>
 
     <h2 id="reference">Reference</h2>

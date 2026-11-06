@@ -8,7 +8,7 @@
 
 /docs/
   Strict-Transport-Security: max-age=31536000
-  Content-Security-Policy: default-src 'none'; script-src https://static.cloudflareinsights.com; style-src 'self'; font-src 'self'; img-src 'self'; connect-src https://cloudflareinsights.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src https://static.cloudflareinsights.com; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self' https://cloudflareinsights.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
 /install.ps1
   Content-Type: text/plain; charset=utf-8
