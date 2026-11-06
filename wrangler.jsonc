@@ -7,8 +7,18 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
-  }
-  // The bitllm.org and www.bitllm.org custom domains are attached after the
-  // zone moves to the BitLLM Cloudflare account. Attaching them now would take
-  // the live site away from the old host before the transfer.
+  },
+  "kv_namespaces": [
+    {
+      "binding": "NETWORK",
+      "id": "7295150c7ffd436b8e5eb845089d89ce"
+    }
+  ],
+  // The bitllm.org zone is in this account (Zjj1993, 5119540a…). These are
+  // zone routes, not custom domains: the existing proxied records stay, and
+  // the Worker answers for both hostnames at the edge.
+  "routes": [
+    { "pattern": "bitllm.org/*", "zone_name": "bitllm.org" },
+    { "pattern": "www.bitllm.org/*", "zone_name": "bitllm.org" }
+  ]
 }
