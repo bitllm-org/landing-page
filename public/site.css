@@ -1,6 +1,6 @@
-/* BitLLM site. One dark sheet, square corners, a 2x2 mark, green for the
-   live/you accent and orange for servers. System fonts only: the same
-   palette and the same mark as the dashboard at 127.0.0.1:7778. */
+/* BitLLM site. One dark sheet, square corners, the BitLLM_ wordmark, green for
+   the live/you accent and orange for servers. System fonts only: the same
+   palette and the same wordmark as the dashboard at 127.0.0.1:7778. */
 :root {
   --bg: #0c0e0d;
   --bg-2: #0f1110;
@@ -40,13 +40,12 @@ button { font: inherit; cursor: pointer; }
 code, .mono { font-family: var(--mono); }
 .wrap { width: 100%; max-width: 1100px; margin: 0 auto; padding-inline: max(20px, env(safe-area-inset-left)); }
 
-/* The mark: the same four squares as the dashboard. */
-.mark { width: 18px; height: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; flex: none; }
-.mark i { background: var(--ink); }
-.mark i:first-child { background: var(--green); }
-.mark i:last-child { background: var(--orange); }
-.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; letter-spacing: -.2px; color: var(--ink); text-decoration: none; white-space: nowrap; }
+/* The mark: the BitLLM_ wordmark in mono, with the terminal-cursor underscore. */
+.brand { display: inline-flex; align-items: center; font: 700 17px/1 var(--mono); letter-spacing: -.4px; color: var(--ink); text-decoration: none; white-space: nowrap; }
 .brand:hover { color: var(--ink); }
+.brand .cursor { color: #5ddb96; animation: blink 1.15s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .brand .cursor { animation: none; } }
 
 /* Header */
 .site-head { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--rule); background: rgba(12, 14, 13, .86); backdrop-filter: blur(12px); }
