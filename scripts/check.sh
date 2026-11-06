@@ -3,12 +3,13 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-FILES="public/index.html public/docs/index.html public/llms.txt public/install.sh public/install.ps1"
+FILES="public/index.html public/home.js public/docs/index.html public/llms.txt public/install.sh public/install.ps1"
 for f in $FILES; do
   [ -s "$f" ] || { echo "check: $f is missing or empty" >&2; exit 1; }
 done
 sh -n public/install.sh
 node --check src/index.js
+node --check public/home.js
 
 if grep -n 'bitllm-network' $FILES; then
   echo "check: public links must use bitllm-org, not bitllm-network" >&2
@@ -34,18 +35,23 @@ for page in pages:
     ids = re.findall(r'\sid="([^"]+)"', html)
     for dup in sorted({i for i in ids if ids.count(i) > 1}):
         missing.append(f"{page}: duplicate id {dup}")
+    # public/_headers allows no inline code, so a browser would refuse these.
+    for pattern, what in ((r"<script(?![^>]*\ssrc=)", "inline script"), (r"<style\b", "style element"),
+                          (r'\sstyle="', "style attribute"), (r'\son[a-z]+="', "inline event handler")):
+        if re.search(pattern, html):
+            missing.append(f"{page}: {what}, which the Content-Security-Policy blocks")
 css = (base / "site.css").read_text(encoding="utf-8")
 for ref in re.findall(r'url\("?([^")]+)"?\)', css):
     if not (base / ref.lstrip("/")).exists():
         missing.append(f"public/site.css: {ref}")
 if missing:
-    print("check: broken references or duplicate ids:", file=sys.stderr)
+    print("check: broken references, duplicate ids or inline code:", file=sys.stderr)
     for ref in missing:
         print("  " + ref, file=sys.stderr)
     sys.exit(1)
 PY
 
-if grep -n '—' public/index.html public/docs/index.html public/llms.txt; then
+if grep -n '—' public/index.html public/home.js public/docs/index.html public/llms.txt; then
   echo "check: user-facing copy has no em dashes (see AGENTS.md in bitllm-org/bitllm)" >&2
   exit 1
 fi
@@ -68,6 +74,11 @@ for name in sorted(theirs.keys() | ours.keys()):
     if theirs.get(name) != ours.get(name):
         print(f"::warning::{name} differs from the dashboard: site {ours.get(name)}, dashboard {theirs.get(name)}")
 TOKENS
+
+[ "$(grep -c '^  Content-Security-Policy: ' public/_headers)" = 2 ] || {
+  echo "check: public/_headers must set a Content-Security-Policy on / and /docs/" >&2
+  exit 1
+}
 
 grep -q '"directory": "./public"' wrangler.jsonc || {
   echo "check: wrangler.jsonc must publish ./public" >&2
