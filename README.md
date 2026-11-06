@@ -25,7 +25,7 @@ setup page and lives in [bitllm-org/bitllm](https://github.com/bitllm-org/bitllm
 ## Live map
 
 `GET /network.json` is answered from the `network` key in the Worker's KV namespace. A GitHub
-workflow in the node repository writes that key every ten minutes, and the key expires one hour
+workflow in the node repository writes that key about every twenty minutes, and the key expires one hour
 after the last write. The snapshot has counts per model and per ~156 km cell and no peer ids or
 addresses. If the key is empty the page shows an empty network instead of failing. If KV fails the
 Worker answers 503 with a JSON error and the page says live data is unavailable. The page marks a

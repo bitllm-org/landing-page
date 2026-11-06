@@ -145,7 +145,7 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
   const NS = "http://www.w3.org/2000/svg";
   let data = null, picked = null;
 
-  // A GitHub workflow publishes every ten minutes and its runs can start late, so
+  // A GitHub workflow publishes about every twenty minutes and can start late, so
   // 15 minutes is an ordinary age and this allows for a missed run as well. The
   // key expires an hour after the last write, which then reads as no snapshot.
   const STALE_AFTER = 30 * 60 * 1000;

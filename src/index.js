@@ -4,7 +4,7 @@
 // scheduled job in the node repo writes to KV, and anything no file matches.
 const REPO = "bitllm-org/bitllm";
 const WORKFLOW = "network-map.yml";
-// The workflow publishes every ten minutes. Only dispatch when the snapshot
+// With this and a five minute cron, the map updates about every twenty minutes. Only dispatch when the snapshot
 // is older than this, so a working GitHub cron never gets a second run.
 const STALE_MS = 15 * 60 * 1000;
 const EMPTY = JSON.stringify({
