@@ -31,18 +31,21 @@ for page in pages:
             continue
         if not (base / path).exists():
             missing.append(f"{page}: {ref}")
+    ids = re.findall(r'\sid="([^"]+)"', html)
+    for dup in sorted({i for i in ids if ids.count(i) > 1}):
+        missing.append(f"{page}: duplicate id {dup}")
 css = (base / "site.css").read_text(encoding="utf-8")
 for ref in re.findall(r'url\("?([^")]+)"?\)', css):
     if not (base / ref.lstrip("/")).exists():
         missing.append(f"public/site.css: {ref}")
 if missing:
-    print("check: pages reference files that are not here:", file=sys.stderr)
+    print("check: broken references or duplicate ids:", file=sys.stderr)
     for ref in missing:
         print("  " + ref, file=sys.stderr)
     sys.exit(1)
 PY
 
-if grep -n '—' public/index.html public/docs/index.html; then
+if grep -n '—' public/index.html public/docs/index.html public/llms.txt; then
   echo "check: user-facing copy has no em dashes (see AGENTS.md in bitllm-org/bitllm)" >&2
   exit 1
 fi
