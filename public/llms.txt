@@ -1,13 +1,14 @@
 # BitLLM
 
-> BitLLM is a peer-to-peer LLM inference network. Every participant runs one binary, `bitllm`. It opens an OpenAI- and Anthropic-compatible API on `http://127.0.0.1:7778` that answers from whichever peer serves the requested model, and it can share a local inference server (vLLM, SGLang, llama.cpp, Ollama, LM Studio) with the network. No port forwarding and no central server; an account is optional (see Access rules). Source: https://github.com/bitllm-org/bitllm (MIT).
+> BitLLM is a peer-to-peer LLM inference network. Every participant runs one binary, `bitllm`. It opens an OpenAI- and Anthropic-compatible API on `http://127.0.0.1:7778` that answers from whichever peer serves the requested model, and it can share a local inference server (vLLM, SGLang, llama.cpp, Ollama, LM Studio) with the network. No port forwarding and no central server in the request path; an account is optional (see Access rules). Source: https://github.com/bitllm-org/bitllm (MIT).
 
 This file is written for AI agents setting BitLLM up on behalf of a user. Follow the task that matches what the user asked for. Every step has a check; do not continue past a failed check.
 
 ## Before you start: tell the user
 
 - The machine that serves a request reads the prompt in plain text. Do not send secrets, credentials or private data through the network.
-- Peers that connect directly can see the user's IP address. If that matters to the user, run BitLLM behind a VPN.
+- Peers can learn the user's IP address, from a direct connection or from the listen addresses a node sends when hole punching. If that matters to the user, run BitLLM behind a VPN.
+- The node binds the p2p port on all network interfaces. UPnP (asks the router to forward that port) and mDNS (looks for peers on the local network) are on by default. `--upnp=false`, `--mdns=false` and `--ipv6=false` turn these off.
 - Only the user can sign invites or link a wallet. Never ask for or handle their seed phrase.
 
 ## Task 1: install
@@ -117,11 +118,13 @@ curl -s http://127.0.0.1:7778/status
 
 Without `--model`, every model the server reports is shared under exactly that id, and the node re-reads the list every 30 seconds while it runs: a model added to vLLM later appears without restarting BitLLM. Use `--model LOCAL_ID=NETWORK_NAME` only to rename a local id or to share a subset; that pins the mapping.
 
-Check: `serving` in the status lists NETWORK_NAME. Set `--concurrency` to how many parallel requests the server can take without slowing the user down. Requests for a model the user shares are answered by their own server and never leave the machine.
+Check: `serving` in the status lists NETWORK_NAME. Set `--concurrency` to how many parallel requests the server can take without slowing the user down. A model the user shares stays on their machine: requests for it are answered by their own server. If that server is down the gateway answers 503, unless `--peer-fallback` is set, which sends those requests to peers that can read them.
 
-Useful flags: `--upstream-key KEY` if the server needs an API key (or set `BITLLM_UPSTREAM_KEY`, which keeps it out of the process list); `--max-tokens N` caps tokens per peer request (default 32768); `--free-daily N` sets a daily quota per member (default 0, no limit); `--open` also serves uninvited nodes on spare slots. `--allow PEER_ID` (repeatable) serves only the listed nodes and refuses all others. `--ipv6=false` listens on IPv4 only: use it if the machine has a public IPv6 address and the user does not want the p2p port reachable from the internet (cost: IPv6-only peers cannot dial it directly, so more traffic goes through relays). `--weights NAME=HASH` states which weights the server loads (the hash comes from `bitllm hash-model DIR`). With a vLLM server, `--audit-serve` offers this node as an auditor for other nodes' spot checks (off by default). `--location LAT,LON` declares a coarse location for the live map at https://bitllm.org: only ask the user for this, never guess it; any point in their city is enough, and only a ~150 km cell is announced.
+Useful flags: `--upstream-key KEY` if the server needs an API key (or set `BITLLM_UPSTREAM_KEY`, which keeps it out of the process list); `--max-tokens N` caps tokens per peer request (default 32768); `--free-daily N` sets a daily quota per member (default 0, no limit); `--open` also serves uninvited nodes on spare slots (`--open-slots N` caps their slots, `--open-daily N` caps their credits per UTC day). `--upstream-timeout D` is the longest the server may take to send response headers (default 10 minutes); a non-streaming answer sends them only after generating. `--allow PEER_ID` (repeatable) serves only the listed nodes and refuses all others. `--ipv6=false` listens on IPv4 only: use it if the machine has a public IPv6 address and the user does not want the p2p port reachable from the internet (cost: IPv6-only peers cannot dial it directly, so more traffic goes through relays). `--weights NAME=HASH` states which weights the server loads (the hash comes from `bitllm hash-model DIR`). With a vLLM server, `--audit-serve` offers this node as an auditor for other nodes' spot checks (off by default); `--audit-every N` sets how many real requests pass between a client's spot checks (default 50). `--roots ADDR` replaces the root account, for private networks and tests. `--gateway ADDR` moves the gateway; if other machines can reach it, set `--gateway-key KEY` (or `BITLLM_GATEWAY_KEY`), and every request except the dashboard page must then carry the key as `Authorization: Bearer` or `x-api-key`. `--location LAT,LON` declares a coarse location for the live map at https://bitllm.org: only ask the user for this, never guess it; any point in their city is enough, and only a ~150 km cell is announced.
 
-If the machine can accept inbound TCP and UDP 4001, it can also help as a **public relay** (DHT server and relay, no DNS record): `--public --port 4001 --upstream URL --announce /ip4/PUBLIC_IP/tcp/4001 --announce /ip4/PUBLIC_IP/udp/4001/quic-v1`. It must also serve a model, because only a serving node announces. NATed nodes discover it through that announce, so relay capacity grows with the network.
+Hosts forward only the request fields they know from a peer: the standard OpenAI and Anthropic fields and the audit fields, `data:` images only, one prompt per `/completions` request. `--peer-field NAME` adds a field and can be repeated. Requests written on the user's own machine are not filtered.
+
+If the machine can accept inbound TCP and UDP 4001, it can also help as a **public relay** (DHT server and relay, no DNS record): `--public --port 4001 --announce /ip4/PUBLIC_IP/tcp/4001 --announce /ip4/PUBLIC_IP/udp/4001/quic-v1`. It needs no model: a bare `--public` relay works once the seeds run v0.5.0. Add `--upstream URL` to serve a model as well. NATed nodes discover it through that announce, so relay capacity grows with the network.
 
 ## Task 4: keep it running
 
@@ -146,31 +149,33 @@ loginctl enable-linger "$USER"   # keep it running after logout
 
 Add the sharing flags to `ExecStart` for Task 3. On macOS, a LaunchAgent in `~/Library/LaunchAgents` with `KeepAlive` does the same job.
 
-Updates: a release build checks for a newer release 30 seconds after start and every 6 hours, installs the binary after checking it against the release's `SHA256SUMS`, and restarts itself in place when the node is idle (same terminal, same systemd unit, same peer id). `--auto-update=false` turns it off; `bitllm update` checks and installs now, `bitllm update --check` only reports. The replaced binary is kept as `bitllm.prev`. On Windows the new binary is used at the next start. Builds from source and CI builds never update themselves.
+Updates: nodes update only to a release signed with a key in the binary; a release with a missing or wrong signature is refused and the running binary stays as it is. A release build checks for a newer release 30 seconds after start and every 6 hours, installs the binary after checking it against the release's signed `SHA256SUMS`, and restarts itself in place when the node is idle (same terminal, same systemd unit, same peer id), or after 24 hours if it stays busy. `--auto-update=false` turns it off; `bitllm update` checks and installs now, `bitllm update --check` only reports, and `bitllm update --tag vX.Y.Z` installs one named release through the same checks. The replaced binary is kept as `bitllm.prev`, and after three failed starts of a release it installed by itself, the node goes back to it. On Windows the new binary is used at the next start. Builds from source and CI builds never update themselves.
 
 ## Access rules (invite-only beta)
 
 1. An invite gets you served on any free slot. Uninvited nodes are served only when a server is idle, unless its owner opens it to everyone.
 2. There is no daily quota by default. A server owner can set one.
-3. Sharing makes you a contributor: never limited by quota, and 10 invites instead of 3 once your nodes have served.
+3. Sharing makes you a contributor: 10 invites instead of 3 once your nodes have served, and no quota on a server that asked your node for a job in the last 7 days.
 
-To become a member the user needs an Ethereum address, an invite from a member, and a link between this node and that address. The user does the wallet steps in the dashboard ("Link wallet"); do not handle their keys. `GET /members/me` shows the node's membership.
+To become a member the user needs an Ethereum address, an invite from a member, and a link between this node and that address. The user does the wallet steps in the dashboard ("Link wallet"); do not handle their keys. Linking is public: it ties the node id to the wallet address and display name, so tell the user first. `GET /members/me` shows the node's membership. `bitllm invite --revoke 0xADDRESS` revokes an account (roots only).
 
 ## Errors
 
 - `503 no peer serves model X`: nobody serves that name right now. Check `/v1/models` and use a listed id.
+- `503 your own model server is down ...`: the user shares this model, their server is down, and the request stayed on this machine. Start the server, or add `--peer-fallback` to use peers, which can read the requests.
 - `429 busy ...`: every server is full, or this node is uninvited on a closed server. The gateway waited up to 60 seconds on the server's own queue; retry later.
 - `429 daily free quota ... used up`: only if the owner set a quota; another server may still answer, or wait until 00:00 UTC.
 - `400 At most N image(s) may be provided in one prompt`: the serving model takes at most N images per request, and the server that answered runs an older bitllm (current servers keep only the newest N images instead). Start a new agent session to drop old screenshots, or retry later.
 - `403 not allowed: this server serves only the peers its owner listed with --allow ...`: every server for that model serves only its own list. The message includes this node's id; the user can send it to that server's owner, or use another model.
 - `403 use http://127.0.0.1 or http://localhost`: the gateway only accepts local hostnames. Use 127.0.0.1, not the machine's LAN name.
+- `401 this gateway has a key`: the node runs with `--gateway-key`. Send the key as `Authorization: Bearer` or `x-api-key`.
 - Port 7778 in use: another node is already running (`curl -s 127.0.0.1:7778/status`), or start with `--gateway 127.0.0.1:PORT`.
 
 ## Local API
 
 - `GET /v1/models`, `POST /v1/chat/completions`, `POST /v1/completions`, `POST /v1/messages`: inference.
 - `GET /status`: version, peer id, connections, models served, slots in use, requests queued, the
-  last update check.
+  last update check and its signature result.
 - `GET /queue`: slots, running jobs, wait-list depth per model, the age of the oldest waiter, and
   counts of refusals by reason.
 - `GET /members/me`, `GET /members`: membership. `GET /credits`: credits per account.
