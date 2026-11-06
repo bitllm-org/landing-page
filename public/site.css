@@ -178,7 +178,7 @@ td code { font: 12.5px var(--mono); color: var(--ink); overflow-wrap: anywhere; 
 .foot-nav a:hover { color: var(--green); }
 
 /* Docs */
-.docs { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 56px; padding: 54px 0 84px; }
+.docs { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 56px; padding-block: 54px 84px; }
 .toc { position: sticky; top: 88px; align-self: start; border-left: 1px solid var(--rule); padding-left: 18px; font: 12px/2 var(--mono); }
 .toc .toc-title { display: block; margin-bottom: 6px; color: var(--dim); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; }
 .toc a { display: block; color: var(--sub); text-decoration: none; }
