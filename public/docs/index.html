@@ -77,7 +77,7 @@
     <p>Four loops run inside a serving node. A node that only uses the network runs the gateway and listens to gossip:</p>
     <ul>
       <li><strong>Gossip.</strong> Every 10 seconds a serving node or public relay publishes an announce: version, the models it serves, free slots, queue depth, whether it can relay, and optionally a coarse location and weight hashes. Peers keep the latest announce for three periods, so a node that stops answering disappears from routing within about 35 seconds.</li>
-      <li><strong>DHT providers.</strong> Every two minutes a serving node records itself as a provider of each model it serves, under a key derived from the model name. Provider records expire after 24 hours; the refresh repairs a record lost while the DHT had no peers.</li>
+      <li><strong>DHT providers.</strong> A serving node records itself as a provider of each model it announces, under a key derived from the model name. It does so at start, when its models change, when a seed connects, when its own addresses change, and otherwise every 30 minutes. A record stays valid for 48 hours and the address in it for 24. A node that does not know a model's servers yet looks them up by name.</li>
       <li><strong>Upstream check.</strong> A serving node asks its local model server for <code>/models</code> before it announces. A stopped vLLM makes the node go quiet instead of advertising capacity it cannot use.</li>
       <li><strong>Gateway.</strong> The local HTTP server on <code>127.0.0.1:7778</code> accepts OpenAI and Anthropic requests, chooses a peer, and streams the answer back. It is the only part a user normally touches.</li>
     </ul>
