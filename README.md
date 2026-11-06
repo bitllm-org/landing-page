@@ -18,7 +18,7 @@ setup page and lives in [bitllm-org/bitllm](https://github.com/bitllm-org/bitllm
 | `public/llms.txt` | setup runbook for AI agents, served at https://bitllm.org/llms.txt |
 | `public/install.sh`, `public/install.ps1` | the one-line installers served at https://bitllm.org/install.sh and `/install.ps1` |
 | `public/_headers` | headers on files, including HSTS and the Content-Security-Policy on `/` and `/docs/`; a new script or API origin goes here |
-| `src/index.js` | the Worker: answers `/network.json` from KV with a minute of edge cache. Files in `public/` bypass it |
+| `src/index.js` | the Worker: answers `/network.json` from KV, cacheable for a minute. Files in `public/` bypass it |
 | `wrangler.jsonc` | Worker name, assets directory, KV binding and custom domains |
 | `scripts/check.sh` | the check that runs before every deploy |
 
