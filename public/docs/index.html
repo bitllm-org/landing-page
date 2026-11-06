@@ -74,9 +74,9 @@
     <div class="note"><b>Short version.</b> Resolve one seed. Ask the DHT who serves a model. Open an encrypted stream, direct if the routers allow it and otherwise through a relay. Stream the tokens. Sign a receipt for the work. Everything else on this page is detail.</div>
 
     <h2 id="overview">Overview</h2>
-    <p>Four loops run inside every node:</p>
+    <p>Four loops run inside a serving node. A node that only uses the network runs the gateway and listens to gossip:</p>
     <ul>
-      <li><strong>Gossip.</strong> Every 10 seconds a node publishes an announce: version, the models it serves, free slots, queue depth, whether it can relay, and optionally a coarse location and weight hashes. Peers keep the latest announce for three periods, so a node that stops answering disappears from routing within about 35 seconds.</li>
+      <li><strong>Gossip.</strong> Every 10 seconds a serving node publishes an announce: version, the models it serves, free slots, queue depth, whether it can relay, and optionally a coarse location and weight hashes. Peers keep the latest announce for three periods, so a node that stops answering disappears from routing within about 35 seconds.</li>
       <li><strong>DHT providers.</strong> Every two minutes a serving node records itself as a provider of each model it serves, under a key derived from the model name. Provider records expire after 24 hours; the refresh repairs a record lost while the DHT had no peers.</li>
       <li><strong>Upstream check.</strong> A serving node asks its local model server for <code>/models</code> before it announces. A stopped vLLM makes the node go quiet instead of advertising capacity it cannot use.</li>
       <li><strong>Gateway.</strong> The local HTTP server on <code>127.0.0.1:7778</code> accepts OpenAI and Anthropic requests, chooses a peer, and streams the answer back. It is the only part a user normally touches.</li>
@@ -92,15 +92,15 @@
         <tbody>
           <tr><td><strong>client</strong></td><td><code>bitllm</code></td><td>outbound internet</td><td>local gateway only; no model, no inbound port</td></tr>
           <tr><td><strong>serving node</strong></td><td><code>--upstream URL</code></td><td>a local OpenAI-compatible server</td><td>announces models, accepts inference streams, signs receipts</td></tr>
-          <tr><td><strong>public relay</strong></td><td><code>--public</code></td><td>inbound TCP and UDP 4001</td><td>DHT server, relay for NATed peers; still joins the seeds</td></tr>
+          <tr><td><strong>public relay</strong></td><td><code>--public --upstream URL</code></td><td>inbound TCP and UDP 4001, and a model to serve</td><td>DHT server, relay for NATed peers; still joins the seeds</td></tr>
           <tr><td><strong>seed</strong></td><td><code>--dht-server</code></td><td>a public relay listed in DNS</td><td>first contact; starts alone, answers DHT queries, relays</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p>A <strong>serving node</strong> can be behind NAT or CGNAT. It does not need a public address or a port forward: it reserves a relay slot and, when the routers cooperate, upgrades to a direct connection. A <strong>public relay</strong> is any host that can accept inbound TCP and UDP on 4001; it needs no DNS record, no GPU and no model. A <strong>seed</strong> is a public relay that is also named in <code>_dnsaddr.bootstrap.bitllm.org</code>, so a fresh install can find it without knowing anyone.</p>
+    <p>A <strong>serving node</strong> can be behind NAT or CGNAT. It does not need a public address or a port forward: it reserves a relay slot and, when the routers cooperate, upgrades to a direct connection. A <strong>public relay</strong> is any host that can accept inbound TCP and UDP on 4001; it needs no DNS record, but today it must serve a model: a node announces only with <code>--upstream</code>, and peers reject an announce with no models. A <strong>seed</strong> is a public relay that is also named in <code>_dnsaddr.bootstrap.bitllm.org</code>, so a fresh install can find it without knowing anyone.</p>
 
-    <p>This split is deliberate. One seed is enough to join, but it must not be the only relay: relay capacity should grow with the number of public nodes, not with DNS edits. Every public node announces <code>relay=true</code>; NATed nodes add those peers to their autorelay candidate set alongside the seeds.</p>
+    <p>This split is deliberate. One seed is enough to join, but it must not be the only relay: relay capacity should grow with the number of public nodes, not with DNS edits. Every public node that serves a model announces <code>relay=true</code>; NATed nodes add those peers to their autorelay candidate set alongside the seeds.</p>
 
     <h2 id="first-contact">First contact</h2>
     <p>A node with no <code>--bootstrap</code> resolves <code>/dnsaddr/bootstrap.bitllm.org</code>. Each <code>dnsaddr=</code> TXT record at that name is one seed multiaddr, so seeds can be added or retired without a release. The production list currently names <code>seed1.bitllm.org</code> over TCP and QUIC. The node also carries the old <code>boot.bitllm.org</code> tunnel as a literal fallback for one more release. A <code>--bootstrap</code> value that names a peer directly is a <strong>join code</strong>; it works even when DNS does not.</p>
@@ -117,13 +117,13 @@
     <p>Two mechanisms run in parallel, because they answer different questions.</p>
 
     <h3>Gossip: who is online now</h3>
-    <p>Every node subscribes to a libp2p pubsub topic and publishes an announce every 10 seconds. The announce is small and unsigned beyond transport identity:</p>
+    <p>Every node subscribes to a libp2p pubsub topic, and a serving node publishes an announce every 10 seconds. The announce is small and unsigned beyond transport identity:</p>
     <pre><code>{
-  "version": "0.4.6",
+  "v": "v0.4.6",
   "models": ["Qwen/Qwen3.8-Flash-Next"],
   "free": 1, "max": 2, "q": 0,
   "relay": true,
-  "loc": "u33d",
+  "loc": "u33",
   "weights": {"Qwen/Qwen3.8-Flash-Next": "sha256-..."}
 }</code></pre>
     <p>An announce is trusted only while it is fresh: a peer last seen within <code>3 × announce interval + 5 s</code> (about 35 seconds) is a routing candidate. That gives fast failure detection without a heartbeat server. A server that stops answering goes quiet on its next failed upstream check, and clients stop choosing it within three periods.</p>
@@ -155,7 +155,7 @@
       <li><strong>Candidates.</strong> Peers are filtered by fresh announce, by model, by weight hash when the model manifest records one, and by audit status. They are ranked by free slots, queue depth and measured latency. A peer never dialed has no latency and ranks behind a peer that just answered.</li>
       <li><strong>Try up to three.</strong> For each candidate the gateway opens an inference stream with a bounded wait. A server with no free slot keeps the request in its own queue; the client waits up to its own deadline. A server that refuses the caller outright (<code>403</code>, an allow list) is skipped for the rest of the request.</li>
       <li><strong>Stream.</strong> The serving node forwards the upstream response. Tokens are written to the local client as they arrive; a disconnect on either side tears down the stream. The response carries <code>X-Bitllm-Peer</code>, the peer id that answered.</li>
-      <li><strong>Retry or fail.</strong> If every attempt was busy, the gateway backs off, refreshes the candidate list, and tries again until its deadline. If nobody serves the name, it returns <code>503 no peer serves model X</code>. If everyone failed, it returns <code>502</code> with the last error.</li>
+      <li><strong>Retry or fail.</strong> If every attempt was busy, the gateway backs off, refreshes the candidate list, and tries again until its deadline. If nobody serves the name, it returns <code>503 no peer serves model X</code>. If every server refused, it returns the status they gave, with <code>all peers refused</code>. If everyone failed, it returns <code>502 all peers failed</code>.</li>
     </ol>
 
     <p>Both OpenAI (<code>/v1/chat/completions</code>, <code>/v1/completions</code>) and Anthropic (<code>/v1/messages</code>) shapes are accepted. The gateway does not translate between them; it forwards the shape the client sent, so the serving upstream must support it. vLLM supports both.</p>
@@ -194,7 +194,7 @@
     <h2 id="receipts">Receipts and credits</h2>
     <p>Serving earns credits, and credits are countable without a ledger server:</p>
     <ol>
-      <li>The client signs what it received: model, prompt and completion token counts, and a SHA-256 of the exact response bytes. It signs with a one-off key per job, so the receipt shows which server did the work but not who asked.</li>
+      <li>The client signs what it received: model, prompt and completion token counts, and a SHA-256 of the exact response bytes. It signs with a pseudonym, one key per server rotated every 30 days, so the receipt shows which server did the work but not who asked. That server can link one client's jobs to each other.</li>
       <li>The serving node checks the claim against what it sent and countersigns. A receipt that does not match the token formula is rejected.</li>
       <li>The receipt is gossiped. Any node can verify both signatures, recompute the credit (<code>prompt tokens / 4 + completion tokens</code>), and aggregate per server.</li>
     </ol>
@@ -227,7 +227,7 @@
       <li><strong>A peer you connect to directly sees your IP address.</strong> A relayed peer sees the relay's address instead. The serving peer sees your node id either way.</li>
       <li><strong>A location is opt-in.</strong> <code>--location LAT,LON</code> is turned into a three-character geohash cell (about 156 km by 156 km) before it leaves the machine. The point itself is never announced. Without it, the node is counted as "no location".</li>
       <li><strong>IP geolocation is not used</strong>, on purpose: it would place people who never asked, and for relayed nodes it would often place the relay instead.</li>
-      <li><strong>Receipts are pseudonymous.</strong> A client signs with a fresh key per job, so a receipt links a server to work but not to the person who asked.</li>
+      <li><strong>Receipts are pseudonymous.</strong> A client signs with one key per server, rotated every 30 days, so a receipt links a server to work but not to the person who asked. That server can link one client's jobs to each other.</li>
     </ul>
 
     <h2 id="failures">Failure modes</h2>
@@ -242,7 +242,7 @@
           <tr><td>every server is full</td><td>queueing, then retry until the client deadline</td><td><code>429 busy ...</code></td></tr>
           <tr><td>no server for a model</td><td>DHT lookup, then failure</td><td><code>503 no peer serves model X</code></td></tr>
           <tr><td>a relay dies</td><td>reservation is lost; node reserves on another public relay or the seed</td><td>streams blip; clients redial</td></tr>
-          <tr><td>the self-update restarts a node</td><td>restart happens only while idle; same peer id and data dir</td><td>a short gap in announces</td></tr>
+          <tr><td>the self-update restarts a node</td><td>restart happens only while idle; after 30 minutes with no idle moment it gives up and the next start uses the new binary; same peer id and data dir</td><td>a short gap in announces</td></tr>
         </tbody>
       </table>
     </div>
@@ -256,9 +256,10 @@
 
     <h3>Run a public relay</h3>
     <pre><code>bitllm --public --port 4001 \
+  --upstream http://localhost:8000/v1 \
   --announce /ip4/203.0.113.11/tcp/4001 \
   --announce /ip4/203.0.113.11/udp/4001/quic-v1</code></pre>
-    <p><code>--public</code> is a public DHT server and relay that still joins the default seeds. It needs no DNS record: NATed nodes discover it through its <code>relay=true</code> announce and add it to their relay candidates. This is how relay capacity grows without editing DNS.</p>
+    <p><code>--public</code> is a public DHT server and relay that still joins the default seeds. It must also serve a model, because only a serving node announces. It needs no DNS record: NATed nodes discover it through its <code>relay=true</code> announce and add it to their relay candidates. This is how relay capacity grows without editing DNS.</p>
 
     <h3>Keep a node running</h3>
     <p>Use a systemd unit (Linux) or a LaunchAgent (macOS) with restart-on-failure. Keep the data directory: it holds the peer identity, receipts, claims and quota state. A node that loses its data directory comes back as a new peer.</p>
@@ -303,7 +304,7 @@
           <tr><td><code>--upstream URL</code></td><td>share an OpenAI-compatible server</td></tr>
           <tr><td><code>--model local=public</code></td><td>rename a local id, or pin a subset; stops the 30 s refresh</td></tr>
           <tr><td><code>--concurrency N</code></td><td>parallel requests the upstream accepts</td></tr>
-          <tr><td><code>--public</code></td><td>public DHT server and relay; joins the seeds</td></tr>
+          <tr><td><code>--public</code></td><td>public DHT server and relay; joins the seeds; announced only with <code>--upstream</code></td></tr>
           <tr><td><code>--dht-server</code></td><td>start as a seed; does not need the default seeds</td></tr>
           <tr><td><code>--bootstrap ADDR</code></td><td>join through a specific peer (a join code)</td></tr>
           <tr><td><code>--location LAT,LON</code></td><td>declare a coarse location for the map</td></tr>
