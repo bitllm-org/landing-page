@@ -4,278 +4,647 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>BitLLM — peer-to-peer inference for open models</title>
+<title>BitLLM_: peer-to-peer inference for open models</title>
 <link rel="canonical" href="https://bitllm.org/">
-<meta name="description" content="BitLLM is a peer-to-peer LLM inference network. Run one binary, use open models on other people's GPUs, share your own. Any Hugging Face model id works, and a live map shows what is online.">
+<meta name="description" content="BitTorrent for local LLMs. Share your local model, use everyone's. One binary, MIT licensed, no coordinator.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/logo-128.png">
 <link rel="alternate" type="text/plain" href="/llms.txt" title="Setup steps for AI agents">
+<link rel="preload" href="/fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/jetbrains-mono-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
-
-<header class="site-head">
-  <div class="wrap">
-    <a class="brand" href="/">BitLLM<span class="cursor" aria-hidden="true">_</span></a>
-    <nav class="nav" aria-label="Site">
+<div class="window">
+  <div class="titlebar">
+    <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="win-title">bitllm <span class="sep">/</span> home</span>
+    <nav class="tnav" aria-label="Site">
       <a href="#network">Network</a>
-      <a href="#use">Use it</a>
+      <a href="#use">Use</a>
+      <a href="#features">Features</a>
       <a href="/docs/">Docs</a>
-      <a class="opt" href="https://github.com/bitllm-org/branding">Brand</a>
-      <a class="strong" href="https://github.com/bitllm-org/bitllm">Source</a>
+      <a href="#releases">Releases</a>
     </nav>
+    <a class="gh" href="https://github.com/bitllm-org/bitllm" aria-label="Source on GitHub: bitllm-org/bitllm">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span class="long">bitllm-org/bitllm</span><span class="short">source</span>
+      <span class="ver" data-version hidden></span>
+    </a>
   </div>
-</header>
 
-<main class="wrap">
+  <div class="page">
+    <header class="site-header">
+      <div class="brand">
+        <a class="wordmark" href="/">BitLLM<span class="caret" aria-hidden="true">_</span></a>
+        <span class="tagline">// peer-to-peer inference for open models</span>
+      </div>
+      <div class="net" id="net"><i class="dot" aria-hidden="true"></i><span id="net-text">Checking the network...</span></div>
+      <a class="peer" href="https://github.com/bitllm-org/bitllm">github.com/bitllm-org/bitllm</a>
+    </header>
 
-  <section class="hero">
-    <div>
-      <p class="eyebrow"><i aria-hidden="true"></i> peer-to-peer inference · invite-only beta</p>
-      <h1>Use open models.<br>Not someone's <span class="accent">API.</span></h1>
-      <p class="lede">BitLLM is one binary that turns the GPUs people already run into a network. Your agent talks to <code>127.0.0.1:7778</code>; the answer comes from whichever peer serves the model — not from a company that can meter, censor or switch it off.</p>
+    <section class="hero">
+      <p class="comment">// open source, peer-to-peer, invite-only beta</p>
+      <h1><span class="prompt" aria-hidden="true">$</span><span>Use open models.<br>Not someone's API.</span></h1>
+      <p class="lede">BitTorrent for local LLMs. Share your local model, use everyone's. Your agent talks to <code>127.0.0.1:7778</code>, and a peer answers.</p>
+      <div class="cta">
+        <a class="btn" href="#install">Install</a>
+        <a class="btn line" href="https://github.com/bitllm-org/bitllm">View source on GitHub</a>
+      </div>
 
-      <div class="install">
-        <div class="label"><span>install</span><span>macOS · Linux · Windows</span></div>
-        <div class="cmd">
+      <div class="editor" id="install">
+        <div class="editor-bar">
+          <div class="tabs" role="tablist" aria-label="Install"></div>
           <button class="copy" type="button">copy</button>
-          <pre>curl -fsSL https://bitllm.org/install.sh | sh
+        </div>
+        <div class="code">
+          <pre class="gutter" aria-hidden="true"></pre>
+          <pre class="snip"># macOS (Apple silicon), Linux (x86-64, arm64)
+curl -fsSL https://bitllm.org/install.sh | sh
 ~/.local/bin/bitllm</pre>
         </div>
       </div>
-      <p class="alts"><a href="https://bitllm.org/install.ps1">Windows (PowerShell)</a><a href="https://github.com/bitllm-org/bitllm/releases/latest">Releases</a><a href="/llms.txt">Setup for AI agents</a></p>
-    </div>
+      <p class="alts"><a href="https://github.com/bitllm-org/bitllm/releases/latest">Releases</a><a href="/llms.txt">Setup for AI agents</a></p>
 
-    <div class="term" aria-label="Example terminal session">
-      <div class="term-bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="win">bitllm / gateway</span></div>
-      <div class="term-body"><span class="p">$</span> <span class="i">bitllm</span>
-<span class="c">bitllm v0.4 · peer 12D3KooW…</span>
-<span class="c">listening</span> <span class="i">127.0.0.1:7778</span>
-<span class="c">peers</span>     <span class="i">5</span> <span class="c">(3 direct, 2 relay)</span>
-<span class="c">models</span>    <span class="o">deepseek-v4.1-flash-1017</span>
-          <span class="o">Qwen/Qwen3.8-Flash-Next</span>
-<span class="c">map</span>       <span class="i">1</span> <span class="c">relay ·</span> <span class="i">2</span> <span class="c">serving nodes</span>
+      <nav class="flow" aria-label="Sections">
+        <a href="#network"><b>01</b>network</a>
+        <a href="#use"><b>02</b>use</a>
+        <a href="#how"><b>03</b>design</a>
+        <a href="#features"><b>04</b>features</a>
+        <a href="#models"><b>05</b>names</a>
+        <a href="#access"><b>06</b>access</a>
+        <a href="#source"><b>07</b>source</a>
+        <a href="#releases"><b>08</b>releases</a>
+      </nav>
+    </section>
 
-<span class="p">$</span> <span class="i">curl -s 127.0.0.1:7778/v1/models</span>
-<span class="c">{"data":[{"id":"Qwen/Qwen3.8-Flash-Next","nodes":2}]}</span></div>
-    </div>
-  </section>
+    <section class="step" id="dashboard">
+      <div class="step-head">
+        <h2>What you get after install</h2>
+        <span class="head-meta">// the page at 127.0.0.1:7778</span>
+      </div>
+      <p class="mini">Pick a model <span class="head-meta">// online right now</span></p>
+      <div class="inventory">
+        <div class="list-head" aria-hidden="true"><span></span><span>model</span><span>availability</span></div>
+        <div id="models" role="radiogroup" aria-label="Models on the network"><div class="empty">Looking for models...</div></div>
+      </div>
+      <p class="mini">Paste this into your tool <span class="head-meta">// pick your client</span></p>
+      <div class="editor" id="client">
+        <div class="editor-bar">
+          <div class="tabs" role="tablist" aria-label="Client"></div>
+          <button class="copy" type="button">copy</button>
+        </div>
+        <div class="code">
+          <pre class="gutter" aria-hidden="true"></pre>
+          <pre class="snip"></pre>
+        </div>
+      </div>
+      <p class="mini">Check it answers <span class="head-meta">// a real request through your gateway</span></p>
+      <div class="console">
+        <div class="console-bar"><span>terminal</span><span>POST /v1/chat/completions</span></div>
+        <div class="console-body">
+          <div class="cmdline"><span class="ps1" aria-hidden="true">$</span><span class="run">Send a test message</span></div>
+          <div class="result"><span class="dim">// this button is on your dashboard</span></div>
+        </div>
+      </div>
+    </section>
 
-  <div class="stats" aria-label="Live network totals">
-    <div class="stat"><b id="stat-nodes">—</b><span>nodes serving</span></div>
-    <div class="stat"><b id="stat-models">—</b><span>models online</span></div>
-    <div class="stat"><b id="stat-free">—</b><span>free slots</span></div>
-    <div class="stat"><b id="stat-slots">—</b><span>total slots</span></div>
-  </div>
+    <section class="step" aria-label="Repository">
+      <dl class="strip">
+        <dt>source</dt>
+        <dd><a href="https://github.com/bitllm-org/bitllm">github.com/bitllm-org/bitllm</a><button class="copy-url" type="button" data-copy="https://github.com/bitllm-org/bitllm">copy</button></dd>
+        <dt>license</dt>
+        <dd><a href="https://github.com/bitllm-org/bitllm/blob/main/LICENSE">MIT</a><span>written in Go</span><span data-version-row hidden>latest release <a data-version-link href="https://github.com/bitllm-org/bitllm/releases/latest"></a></span><a href="https://github.com/bitllm-org/bitllm/stargazers">Star on GitHub</a></dd>
+        <dt>clients</dt>
+        <dd>Claude Code, Cline, Continue, OpenCode, Aider</dd>
+        <dt>servers</dt>
+        <dd>vLLM, SGLang, llama.cpp, Ollama, LM Studio</dd>
+      </dl>
+    </section>
 
-  <section class="sec" id="network">
-    <div class="sec-head">
-      <div>
-        <p class="sec-label"><b>01</b> live network</p>
+    <section class="step" id="network">
+      <div class="step-head">
+        <span class="num">01</span>
         <h2>The network right now</h2>
+        <span class="head-meta" id="map-time">loading...</span>
       </div>
-      <p class="sub">A snapshot published by an always-on node every two minutes. Nothing here is guessed from an IP address: a location is what its operator declared with <code>--location</code>.</p>
-    </div>
+      <p class="sub">Updated every two minutes. Operators declare their own location. Nothing is guessed from an IP.</p>
 
-    <div class="map-card">
-      <div class="map-head">
-        <span class="live"><i aria-hidden="true"></i> live map</span>
-        <span id="map-time">loading…</span>
+      <div class="stats" aria-label="Live network totals">
+        <div class="stat"><b class="big" id="stat-nodes">-</b><span>nodes serving</span></div>
+        <div class="stat"><b class="big" id="stat-models">-</b><span>models online</span></div>
+        <div class="stat"><b class="big" id="stat-free">-</b><span>free slots</span></div>
+        <div class="stat"><b class="big" id="stat-slots">-</b><span>total slots</span></div>
       </div>
-      <div class="map">
-        <svg id="map-svg" viewBox="0 0 360 150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of nodes serving models now, grouped by declared region">
-          <image href="/world.svg" x="0" y="0" width="360" height="150"/>
-          <g id="map-dots"></g>
-        </svg>
-      </div>
-      <p class="map-note" id="map-note">Loading the live map…</p>
-      <div class="legend">
-        <span><i class="share"></i> serving node</span>
-        <span><i class="unloc"></i> no declared location</span>
-      </div>
-    </div>
 
-    <div class="tbl" aria-label="Models online now">
-      <table>
-        <thead><tr><th>Model</th><th class="num">Nodes</th><th class="num">Free slots</th></tr></thead>
-        <tbody id="map-models"><tr><td colspan="3">Loading…</td></tr></tbody>
-      </table>
-    </div>
-    <p class="more"><a href="/docs/#map">How the map is built and what it does not reveal →</a></p>
-  </section>
+      <div class="map-card">
+        <div class="console-bar"><span class="live"><i aria-hidden="true"></i> live map</span><span>--location</span></div>
+        <div class="map">
+          <svg id="map-svg" viewBox="0 0 360 150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of nodes serving models now, grouped by declared region">
+            <image href="/world.svg" x="0" y="0" width="360" height="150"/>
+            <g id="map-dots"></g>
+          </svg>
+        </div>
+        <p class="map-note" id="map-note">Loading the live map...</p>
+        <div class="legend">
+          <span><i class="share"></i> serving node</span>
+          <span><i class="unloc"></i> no declared location</span>
+        </div>
+      </div>
 
-  <section class="sec" id="use">
-    <p class="sec-label"><b>02</b> join</p>
-    <div class="sec-head">
-      <div><h2>Use it, or add a GPU</h2></div>
-      <p class="sub">The same binary is the client, the server and the relay. You choose which hat it wears with flags; the network topology takes care of the rest.</p>
-    </div>
+      <div class="table-wrap" aria-label="Models online now">
+        <table>
+          <thead><tr><th>Model</th><th class="n">Nodes</th><th class="n">Free slots</th></tr></thead>
+          <tbody id="map-models"><tr><td colspan="3">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <p class="more"><a href="/docs/#map">How the map is built and what it does not reveal →</a></p>
+    </section>
 
-    <div class="cards three">
-      <div class="card">
-        <p class="n">a / use</p>
-        <h3>Point your agent here</h3>
-        <p>Install, run, open <code>127.0.0.1:7778</code>. The page lists every model online, gives a snippet for Claude Code, Cline, Aider or any OpenAI/Anthropic client, and sends a test message.</p>
+    <section class="step" id="use">
+      <div class="step-head">
+        <span class="num">02</span>
+        <h2>Use it, or add a GPU</h2>
+        <span class="head-meta">// same binary, three jobs</span>
       </div>
-      <div class="card">
-        <p class="n">b / share</p>
-        <h3>Share a local server</h3>
-        <p>Already run vLLM, SGLang, llama.cpp, Ollama or LM Studio? Point BitLLM at it. Every model it lists is shared under its own id. No port forwarding, and peers reach you by relay or hole punching.</p>
-      </div>
-      <div class="card">
-        <p class="n">c / relay</p>
-        <h3>Add a public relay</h3>
-        <p>A host with inbound TCP and UDP 4001 runs <code>--public</code>: DHT server and relay, no DNS record. NATed nodes reserve on it alongside the seed, so capacity grows with the network.</p>
-      </div>
-    </div>
+      <p class="sub">One binary. Flags decide what it does.</p>
 
-    <div class="install" style="margin-top:22px">
-      <div class="label"><span>share every model your server lists</span><span>no --model needed</span></div>
-      <div class="cmd">
-        <button class="copy" type="button">copy</button>
-        <pre>bitllm --upstream http://localhost:8000/v1 --concurrency 2</pre>
+      <div class="duo">
+        <div>
+          <h3>Point your agent here</h3>
+          <p>Install, run, open <code>127.0.0.1:7778</code>. Pick a model, copy the snippet, send a test message.</p>
+        </div>
+        <div class="editor">
+          <div class="editor-bar"><div class="tabs"><span class="file">gateway</span></div></div>
+          <div class="code">
+            <pre class="gutter" aria-hidden="true"></pre>
+            <pre class="snip" data-hl># Anthropic clients: no /v1
+ANTHROPIC_BASE_URL=http://127.0.0.1:7778
+
+# OpenAI clients
+Base URL:  http://127.0.0.1:7778/v1
+API key:   bitllm  (any value)</pre>
+          </div>
+        </div>
       </div>
-      <div class="cmd">
-        <button class="copy" type="button">copy</button>
-        <pre>bitllm --public --port 4001 \
+
+      <div class="duo flip">
+        <div>
+          <h3>Share a local server</h3>
+          <p>Point BitLLM at vLLM, SGLang, llama.cpp, Ollama or LM Studio. Every model it lists is shared. No port forwarding.</p>
+          
+        </div>
+        <div>
+          <div class="editor">
+            <div class="editor-bar"><div class="tabs"><span class="file">share every model your server lists</span></div><button class="copy" type="button">copy</button></div>
+            <div class="code">
+              <pre class="gutter" aria-hidden="true"></pre>
+              <pre class="snip" data-hl>bitllm --upstream http://localhost:8000/v1 --concurrency 2</pre>
+            </div>
+          </div>
+          <div class="console gap">
+            <div class="console-bar"><span>bitllm top</span><span>example</span></div>
+            <div class="console-body"><pre class="draw top" role="img" aria-label="Example of the bitllm top terminal view: peers, what this node serves, work exchanged, credit rate and the log."><span class="i">bitllm v0.4.6</span>   12D3KooWB…PFw2o   up 3h12m   peers 3   inflight 1
+<span class="d">────────────────────────────────────────────────────────────</span>
+<span class="i">PEERS</span>
+  12D3KooWA…x7Qm2  out  direct  203.0.113.10
+  12D3KooWD…kP9tZ  out  relay   203.0.113.11
+  12D3KooWQ…b4rLe  in   direct  198.51.100.7
+<span class="d">────────────────────────────────────────────────────────────</span>
+<span class="i">SERVING</span>  Qwen/Qwen3.8-Flash-Next                 upstream up
+<span class="d">────────────────────────────────────────────────────────────</span>
+<span class="i">WORK EXCHANGED</span>
+                    did for you     you did         net
+  12D3KooWD…kP9tZ        86,057          12     +86,045
+  total                  86,057          12     +86,045
+<span class="d">────────────────────────────────────────────────────────────</span>
+<span class="i">RATE</span>     ▁▂▃▅█▃▁   124 credits/min
+<span class="d">q quit   ·   the node keeps running</span></pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="duo">
+        <div>
+          <h3>Add a public relay</h3>
+          <p>A host with inbound TCP and UDP 4001 runs <code>--public</code> and serves a model. NATed nodes can then reserve on it.</p>
+        </div>
+        <div>
+          <div class="editor">
+            <div class="editor-bar"><div class="tabs"><span class="file">public relay</span></div><button class="copy" type="button">copy</button></div>
+            <div class="code">
+              <pre class="gutter" aria-hidden="true"></pre>
+              <pre class="snip" data-hl>bitllm --public --port 4001 \
+  --upstream http://localhost:8000/v1 \
   --announce /ip4/203.0.113.11/tcp/4001 \
   --announce /ip4/203.0.113.11/udp/4001/quic-v1</pre>
+            </div>
+          </div>
+          <div class="console gap">
+            <div class="console-body"><pre class="draw" role="img" aria-label="A NATed node reserves on the seed and on your public relay.">NATed node <span class="d">──┬──▶</span> seed
+              <span class="d">└──▶</span> <span class="i">your relay</span>   <span class="d">relay=true</span></pre></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <p class="more"><a href="/docs/#serving">Sharing, model names and public relays in the docs →</a></p>
-  </section>
+      <p class="more"><a href="/docs/#serving">Sharing, model names and public relays in the docs →</a></p>
+    </section>
 
-  <section class="sec" id="how">
-    <p class="sec-label"><b>03</b> design</p>
-    <div class="sec-head">
-      <div><h2>No coordinator. No database.</h2></div>
-      <p class="sub">A seed is a phone book entry, not a switchboard. After first contact, the network is DHT lookups, gossip, and the shortest path two peers can build.</p>
-    </div>
+    <section class="step" id="how">
+      <div class="step-head">
+        <span class="num">03</span>
+        <h2>No coordinator. No database.</h2>
+        <span class="head-meta">// the path of one request</span>
+      </div>
+      <p class="sub">A seed is only first contact. After that, peers find each other.</p>
 
-    <div class="cards four">
-      <div class="card">
-        <p class="n">01 / discovery</p>
-        <h3>Find each other</h3>
-        <p>A fresh install resolves <code>_dnsaddr.bootstrap.bitllm.org</code>, then asks a Kademlia DHT who serves a model. Servers gossip what they have every ten seconds.</p>
-      </div>
-      <div class="card">
-        <p class="n">02 / connectivity</p>
-        <h3>Get through NAT</h3>
-        <p>Most nodes are behind NAT or CGNAT. A relay carries the first bytes; hole punching upgrades the link to direct when the routers allow it. Everything is encrypted.</p>
-      </div>
-      <div class="card">
-        <p class="n">03 / inference</p>
-        <h3>Stream the answer</h3>
-        <p>Your gateway speaks OpenAI and Anthropic. It picks a server with a free slot, queues if all are busy, and streams tokens straight from the GPU that produced them.</p>
-      </div>
-      <div class="card">
-        <p class="n">04 / receipts</p>
-        <h3>Count the work</h3>
-        <p>Client and server both sign a receipt for token counts and a hash of the response. Receipts gossip to every node, so credits are publicly countable without a ledger server.</p>
-      </div>
-    </div>
-    <p class="more"><a href="/docs/">Read the whole architecture →</a></p>
-  </section>
+      <ol class="path" aria-label="The path of one request">
+        <li><b>agent</b><span>POST /v1/chat/completions</span></li>
+        <li><b>gateway</b><span>127.0.0.1:7778</span><span class="aside">Your own model stops here: no peer, no receipt.</span></li>
+        <li><b>find</b><span>gossip, then the DHT</span></li>
+        <li><b>link</b><span>direct or relay</span></li>
+        <li><b>serving node</b><span>queue, then --upstream</span></li>
+        <li><b>answer</b><span>tokens stream back</span></li>
+        <li><b>receipt</b><span>both sides sign, then it gossips</span></li>
+      </ol>
 
-  <section class="sec" id="models">
-    <p class="sec-label"><b>04</b> model names</p>
-    <div class="sec-head">
-      <div><h2>A name is the model, not the machine.</h2></div>
-      <p class="sub">If two machines announce the same name, they are interchangeable for it. The gateway uses one; if it stops answering, it tries another. That is the whole failover rule.</p>
-    </div>
-
-    <div class="cards three">
-      <div class="card">
-        <p class="n">public weights</p>
-        <h3>Use the Hugging Face id</h3>
-        <p><code>Qwen/Qwen3.8-Flash-Next</code>, slash and case as published. Independent hosts that serve the same repo match without a registry.</p>
+      <div class="grid two gap">
+        <div class="card">
+          <h3>Find each other</h3>
+          <p>A DNS seed for first contact, then gossip and a Kademlia DHT.</p>
+        </div>
+        <div class="card">
+          <h3>Get through NAT</h3>
+          <p>A relay carries the first bytes. Hole punching goes direct when routers allow it. Transport is encrypted.</p>
+        </div>
+        <div class="card">
+          <h3>Stream the answer</h3>
+          <p>Your gateway speaks OpenAI and Anthropic, picks a free slot, or queues.</p>
+        </div>
+        <div class="card">
+          <h3>Count the work</h3>
+          <p>Client and server both sign a receipt. Anyone can count the credits.</p>
+        </div>
       </div>
-      <div class="card">
-        <p class="n">quant or fine-tune</p>
-        <h3>Name the actual weights</h3>
-        <p>Use the repo id of the weights, plus a suffix that says what changed: <code>Qwen/Qwen3.8-Flash-Next-fp4-alesha</code>. One name means one set of weights.</p>
-      </div>
-      <div class="card">
-        <p class="n">something new</p>
-        <h3>Just serve it</h3>
-        <p>Any stable id works. No registration: the node announces it, <code>/v1/models</code> lists it, and the dashboard lets a user pick it. A model added to your server later appears without a restart.</p>
-      </div>
-    </div>
-  </section>
 
-  <section class="sec" id="access">
-    <p class="sec-label"><b>05</b> access</p>
-    <div class="sec-head">
-      <div><h2>Invite-only, in the BitTorrent sense.</h2></div>
-      <p class="sub">No account is needed to try the network. Membership decides who gets a free slot first, not who can join.</p>
-    </div>
-    <ol class="rules">
-      <li><span class="n">i</span><div><b>An invite gets you served on any free slot.</b><p>Uninvited nodes are served only when a server is idle, unless its owner opens it to everyone.</p></div></li>
-      <li><span class="n">ii</span><div><b>No daily quota by default.</b><p>A server owner can set one, per member or for everyone.</p></div></li>
-      <li><span class="n">iii</span><div><b>Sharing makes you a contributor.</b><p>Never limited by quota, and 10 invites instead of 3 once your nodes have served.</p></div></li>
-    </ol>
-    <div class="cards three" style="margin-top:22px">
-      <div class="card"><h3>Invites are signatures</h3><p>An Ethereum account signs an invite; nodes gossip it. There is no membership server, and revoking an account removes everyone it invited.</p></div>
-      <div class="card"><h3>The server reads the prompt</h3><p>As with any inference provider. Do not send secrets. Direct peers can see your IP address; use a VPN if that matters.</p></div>
-      <div class="card"><h3>Nothing is verified yet</h3><p>A node can claim a model it does not serve. Auditing is opt-in and spot-check based; it is not a proof of weights. Credits have no monetary value.</p></div>
-    </div>
-  </section>
+      <div class="grid two gap">
+        <div class="card">
+          <h3>Relay, then direct</h3>
+          <pre class="draw" role="img" aria-label="First the request goes through a relay. If hole punching works, the peers connect directly."><span class="d">first</span>   you <span class="d">──▶</span> relay <span class="d">──▶</span> peer
 
-  <section class="sec">
-    <div class="doc-cta">
-      <div>
-        <h2>Everything, in one place.</h2>
-        <p>The architecture page covers roles and reachability, first contact and self-filtering, DHT and gossip, relay selection, the request path, receipts, access, audits, failure modes, and the privacy boundary.</p>
+<span class="d">then</span>    you <span class="d">───────────▶</span> peer</pre>
+          <p class="note">If the routers do not allow it, the request stays on the relay.</p>
+        </div>
+        <div class="card">
+          <h3>One receipt</h3>
+          <pre class="draw" aria-label="The fields of a receipt"><span class="i">job  model  client  server</span>
+<span class="i">prompt_tokens  completion_tokens</span>
+<span class="i">output_sha256  ts</span>
+credits = prompt/4 + completion
+<span class="d">client_sig  server_sig</span></pre>
+          <p class="note">Not verified: that the named model ran, or the token counts.</p>
+        </div>
       </div>
-      <a class="go" href="/docs/">architecture docs <span aria-hidden="true">→</span></a>
-    </div>
-  </section>
-</main>
+      <p class="more"><a href="/docs/">Read the whole architecture →</a></p>
+    </section>
 
-<footer class="site-foot">
-  <div class="wrap">
-    <div>
-      <a class="brand" href="/">BitLLM<span class="cursor" aria-hidden="true">_</span></a>
-      <p>Peer-to-peer inference for open models. One binary, MIT licensed, no coordinator. The map is a snapshot; the network is the nodes.</p>
+    <section class="step" id="features">
+      <div class="step-head">
+        <span class="num">04</span>
+        <h2>Features</h2>
+        <span class="head-meta">// all in the one binary</span>
+      </div>
+      <div class="grid three">
+        <div class="card"><h3>Two APIs</h3><p>OpenAI and Anthropic requests on one local port.</p></div>
+        <div class="card"><h3>bitllm top</h3><p>A live view of your node in the terminal.</p></div>
+        <div class="card"><h3>Self-update</h3><p>Verifies the checksum and restarts when idle. <code>--auto-update=false</code> turns it off.</p></div>
+        <div class="card"><h3>Credits</h3><p>Every job you serve earns credits.</p></div>
+        <div class="card"><h3>--location</h3><p>Opt in to the map with a coarse cell of about 156 km.</p></div>
+        <div class="card"><h3>--audit</h3><p>Opt-in spot checks on the peers that answer you.</p></div>
+      </div>
+    </section>
+
+    <section class="step" id="models">
+      <div class="step-head">
+        <span class="num">05</span>
+        <h2>A name is the model, not the machine.</h2>
+      </div>
+      <p class="sub">Two machines with one name are interchangeable. If one stops answering, the gateway tries another.</p>
+
+      <div class="console">
+        <div class="console-body"><pre class="draw" role="img" aria-label="Two hosts announce one model name. If the first stops answering, the gateway tries the second."><span class="i">Qwen/Qwen3.8-Flash-Next</span>
+<span class="d">├─</span> host a   stops answering
+<span class="d">└─</span> host b   the gateway tries this one
+<span class="d">// no failover after the first byte</span></pre></div>
+      </div>
+
+      <div class="grid three gap">
+        <div class="card">
+          <h3>Use the Hugging Face id</h3>
+          <p><code>Qwen/Qwen3.8-Flash-Next</code>, exactly as published. Hosts of the same repo match without a registry.</p>
+        </div>
+        <div class="card">
+          <h3>Name the actual weights</h3>
+          <p>For a quant or fine-tune, add a suffix: <code>...-fp4-alesha</code>. One name, one set of weights.</p>
+        </div>
+        <div class="card">
+          <h3>Just serve it</h3>
+          <p>Any stable id works, with no registration. Models you add later appear without a restart.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="access">
+      <div class="step-head">
+        <span class="num">06</span>
+        <h2>Invite-only, in the BitTorrent sense.</h2>
+      </div>
+      <p class="sub">No account needed to try it. Membership decides who gets a free slot first.</p>
+
+      <ol class="rules">
+        <li><span class="n">i</span><div><b>An invite gets you served on any free slot.</b> Uninvited nodes are served only when a server is idle, unless its owner opens it to everyone.</div></li>
+        <li><span class="n">ii</span><div><b>There is no daily quota by default.</b> A server owner can set one.</div></li>
+        <li><span class="n">iii</span><div><b>Sharing makes you a contributor:</b> never limited by quota, and 10 invites instead of 3 once your nodes have served.</div></li>
+      </ol>
+
+      <div class="console gap">
+        <div class="console-body"><pre class="draw" role="img" aria-label="The invite tree: a root has unlimited invites, a member has 3, and a member whose nodes have served has 10."><span class="i">root</span>                 <span class="d">unlimited invites</span>
+<span class="d">└─</span> <span class="i">member</span>            <span class="d">3 invites</span>
+   <span class="d">└─</span> <span class="i">has served</span>     <span class="d">10 invites</span></pre></div>
+      </div>
+
+      <div class="grid three gap">
+        <div class="card"><h3>Invites are signatures</h3><p>An Ethereum account signs an invite and nodes gossip it. A root can revoke an account, which also removes everyone it invited.</p></div>
+        <div class="card"><h3>The server reads the prompt</h3><p>Like any inference provider. Do not send secrets. Direct peers can see your IP; use a VPN if that matters.</p></div>
+        <div class="card"><h3>Nothing is verified yet</h3><p>A node can claim a model it does not serve. Audits are opt-in spot checks, not proof of weights. Credits have no monetary value today.</p></div>
+      </div>
+    </section>
+
+    <section class="step" id="source">
+      <div class="step-head">
+        <span class="num">07</span>
+        <h2>Open source</h2>
+        <span class="head-meta">// MIT licensed</span>
+      </div>
+      <p class="sub">Read it, build it, change it. Every line of the node is on GitHub.</p>
+
+      <div class="duo">
+        <div>
+          <div class="editor">
+            <div class="editor-bar"><div class="tabs"><span class="file">build from source</span></div><button class="copy" type="button">copy</button></div>
+            <div class="code">
+              <pre class="gutter" aria-hidden="true"></pre>
+              <pre class="snip" data-hl>git clone https://github.com/bitllm-org/bitllm.git
+cd bitllm
+go build -o bitllm ./cmd/bitllm
+go test -race ./...</pre>
+            </div>
+          </div>
+          <div class="links">
+            <a class="btn" href="https://github.com/bitllm-org/bitllm">View source</a>
+            <a class="btn line" href="https://github.com/bitllm-org/bitllm/issues">Issues</a>
+            <a class="btn line" href="https://github.com/bitllm-org/bitllm/blob/main/CONTRIBUTING.md">Contributing</a>
+            <a class="btn line" href="https://github.com/bitllm-org/bitllm/blob/main/AGENTS.md">AGENTS.md</a>
+            <a class="btn line" href="https://github.com/bitllm-org/bitllm/blob/main/LICENSE">License</a>
+            <a class="btn line" href="https://github.com/bitllm-org/bitllm/graphs/contributors">Contributors</a>
+          </div>
+          <p class="note">Also in the org: <a href="https://github.com/bitllm-org/landing-page">landing-page</a>, this site. <a href="https://github.com/bitllm-org/branding">branding</a>, the mark and fonts. <a href="https://github.com/bitllm-org/.github">.github</a>, the org profile.</p>
+        </div>
+        <div class="editor">
+          <div class="editor-bar"><div class="tabs"><span class="file">bitllm-org/bitllm</span></div></div>
+          <div class="code">
+            <pre class="snip" id="tree"><span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/cmd/bitllm">cmd/bitllm</a>         <span class="cm">the CLI</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/internal/node">internal/node</a>      <span class="cm">the running node</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/internal/protocol">internal/protocol</a>  <span class="cm">the wire contract</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/internal/account">internal/account</a>   <span class="cm">accounts, claims</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/internal/members">internal/members</a>   <span class="cm">the invite tree</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/internal/receipts">internal/receipts</a>  <span class="cm">signed receipts</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/internal/netmap">internal/netmap</a>    <span class="cm">the map</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/internal/assets">internal/assets</a>    <span class="cm">the dashboard</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/internal/tui">internal/tui</a>       <span class="cm">bitllm top</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/internal/update">internal/update</a>    <span class="cm">self-update</span>
+<span class="cm">├─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/deploy">deploy</a>             <span class="cm">seed, GPU host</span>
+<span class="cm">└─</span> <a href="https://github.com/bitllm-org/bitllm/tree/main/docs">docs</a>               <span class="cm">design notes</span></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="releases">
+      <div class="step-head">
+        <span class="num">08</span>
+        <h2>Releases</h2>
+        <span class="head-meta">// from GitHub</span>
+      </div>
+      <div class="releases" id="rel-list" hidden></div>
+      <p class="more"><a href="https://github.com/bitllm-org/bitllm/releases">All releases on GitHub →</a></p>
+    </section>
+
+    <section class="step">
+      <div class="duo">
+        <div>
+          <h2>Everything, in one place.</h2>
+          <p class="note">Roles, discovery, the request path, receipts, audits, failure modes and privacy.</p>
+          <div class="cta"><a class="btn line" href="/docs/">architecture docs →</a></div>
+        </div>
+        <div class="editor">
+          <div class="editor-bar"><div class="tabs"><span class="file">start here</span></div><button class="copy" type="button">copy</button></div>
+          <div class="code">
+            <pre class="gutter" aria-hidden="true"></pre>
+            <pre class="snip" data-hl>curl -fsSL https://bitllm.org/install.sh | sh
+~/.local/bin/bitllm</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="columns">
+      <nav aria-label="Project">
+        <h3>Project</h3>
+        <a href="https://github.com/bitllm-org/bitllm">Source</a>
+        <a href="https://github.com/bitllm-org/bitllm/releases">Releases</a>
+        <a href="https://github.com/bitllm-org/bitllm/blob/main/CONTRIBUTING.md">Contributing</a>
+        <a href="https://github.com/bitllm-org/bitllm/blob/main/LICENSE">MIT license</a>
+      </nav>
+      <nav aria-label="Docs">
+        <h3>Docs</h3>
+        <a href="/docs/">Docs</a>
+        <a href="/llms.txt">llms.txt</a>
+        <a href="https://github.com/bitllm-org/bitllm#readme">README</a>
+        <a href="https://github.com/bitllm-org/bitllm/blob/main/README.zh.md">中文说明</a>
+      </nav>
+      <nav aria-label="Network">
+        <h3>Network</h3>
+        <a href="#network">Live map</a>
+        <a href="#use">Use it</a>
+        <a href="https://github.com/bitllm-org/bitllm/blob/main/docs/host-a-gpu.md">Host a GPU</a>
+        <a href="#access">Access</a>
+      </nav>
+      <nav aria-label="Brand">
+        <h3>Brand</h3>
+        <a href="https://github.com/bitllm-org/branding">Brand assets</a>
+        <a href="https://github.com/bitllm-org">GitHub org</a>
+        <a href="https://github.com/bitllm-org/landing-page">This site</a>
+      </nav>
     </div>
-    <nav class="foot-nav" aria-label="Footer">
-      <a href="/docs/">Docs</a>
-      <a href="/llms.txt">llms.txt</a>
-      <a href="https://github.com/bitllm-org/bitllm">Source</a>
-      <a href="https://github.com/bitllm-org/branding">Brand assets</a>
-      <a href="https://github.com/bitllm-org/bitllm/blob/main/README.zh.md">中文说明</a>
-      <a href="https://github.com/bitllm-org/landing-page">This site</a>
-    </nav>
   </div>
-</footer>
+
+  <footer class="site-footer">
+    <a class="fm" href="/">BitLLM_</a>
+    <span>Peer-to-peer inference for open models. One binary, MIT licensed, no coordinator.</span>
+    <a class="right" href="https://github.com/bitllm-org/bitllm">github.com/bitllm-org/bitllm</a>
+  </footer>
+</div>
 
 <script>
-// Copy buttons: copy the <pre> in the same .cmd, not the button label.
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Same colouring as the dashboard, without touching the copied text.
+function hl(line) {
+  if (/^\s*(#|\/\/)/.test(line)) return `<span class="cm">${esc(line)}</span>`;
+  const re = /("(?:[^"\\]|\\.)*")|(?<=^\s*)(export|curl|claude|bitllm|git|go|cd|irm)\b|\b([A-Z][A-Z0-9_]{2,})=/g;
+  let out = "", last = 0, m;
+  while ((m = re.exec(line))) {
+    out += esc(line.slice(last, m.index));
+    if (m[1]) out += `<span class="str">${esc(m[1])}</span>`;
+    else if (m[2]) out += `<span class="kw">${esc(m[2])}</span>`;
+    else out += `<span class="var">${esc(m[3])}</span>=`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(line.slice(last));
+}
+function paint(editor, code) {
+  const lines = code.split("\n");
+  const gutter = editor.querySelector(".gutter");
+  if (gutter) gutter.textContent = lines.map((_, i) => i + 1).join("\n");
+  editor.querySelector(".snip").innerHTML = lines.map(hl).join("\n");
+}
+for (const s of document.querySelectorAll(".snip[data-hl]")) paint(s.closest(".editor"), s.textContent);
+
+function tabbed(editor, tabs, active, onPick) {
+  const bar = editor.querySelector(".tabs");
+  bar.replaceChildren(...Object.keys(tabs).map(k => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = k;
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", k === active);
+    if (k === active) b.className = "on";
+    b.onclick = () => onPick(k);
+    return b;
+  }));
+  paint(editor, tabs[active]());
+}
+
+// Install box. Windows visitors start on the Windows tab.
+(() => {
+  const editor = document.getElementById("install");
+  const tabs = {
+    "macOS and Linux": () => "# macOS (Apple silicon), Linux (x86-64, arm64)\ncurl -fsSL https://bitllm.org/install.sh | sh\n~/.local/bin/bitllm",
+    "Windows": () => '# Windows (PowerShell)\nirm https://bitllm.org/install.ps1 | iex\n& "$env:LOCALAPPDATA\\bitllm\\bitllm.exe"',
+    "From source": () => "git clone https://github.com/bitllm-org/bitllm.git\ncd bitllm\ngo build -o bitllm ./cmd/bitllm\n./bitllm",
+  };
+  const show = k => tabbed(editor, tabs, k, show);
+  show(/Windows/.test(navigator.userAgent) ? "Windows" : "macOS and Linux");
+})();
+
+// The dashboard's client snippets, pointed at the address a node listens on.
+const clientEditor = document.getElementById("client");
+const BASE = "http://127.0.0.1:7778";
+const clients = {
+  "Claude Code": m => `export ANTHROPIC_BASE_URL=${BASE}
+export ANTHROPIC_API_KEY=bitllm
+export ANTHROPIC_MODEL=${m}
+export ANTHROPIC_DEFAULT_OPUS_MODEL=${m}
+export ANTHROPIC_DEFAULT_SONNET_MODEL=${m}
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=${m}
+export CLAUDE_CODE_SUBAGENT_MODEL=${m}
+claude`,
+  "OpenAI-compatible": m => `# Cline, Continue, OpenCode, Aider, any OpenAI client
+Base URL:  ${BASE}/v1
+API key:   bitllm  (any value)
+Model:     ${m}`,
+  "pi": m => `// ~/.pi/agent/models.json, under "providers"
+"bitllm": {
+  "baseUrl": "${BASE}/v1",
+  "api": "openai-completions",
+  "apiKey": "bitllm",
+  "models": [{ "id": "${m}" }]
+}`,
+  "curl": m => `curl ${BASE}/v1/chat/completions \\
+  -d '{"model":"${m}","messages":[{"role":"user","content":"hi"}]}'`,
+};
+let clientTab = "Claude Code", model = "";
+function renderClient() {
+  const tabs = {};
+  for (const k in clients) tabs[k] = () => clients[k](model || "MODEL");
+  tabbed(clientEditor, tabs, clientTab, k => { clientTab = k; renderClient(); });
+}
+renderClient();
+
+// Copy buttons take the text from .snip, never the line numbers.
 document.addEventListener("click", e => {
-  const b = e.target.closest(".copy"); if (!b) return;
-  const pre = b.parentElement.querySelector("pre");
-  if (!pre) return;
-  const done = () => { const old = b.textContent; b.textContent = "copied"; setTimeout(() => b.textContent = old, 1400); };
-  navigator.clipboard.writeText(pre.textContent).then(done, () => {
-    const r = document.createRange(); r.selectNodeContents(pre); getSelection().removeAllRanges(); getSelection().addRange(r);
-  });
+  const b = e.target.closest(".copy, .copy-url");
+  if (!b) return;
+  const snip = b.dataset.copy ? null : b.closest(".editor").querySelector(".snip");
+  const text = b.dataset.copy || snip.textContent;
+  const done = () => { b.textContent = "copied"; setTimeout(() => { b.textContent = "copy"; }, 1400); };
+  const select = () => { if (!snip) return; const r = document.createRange(); r.selectNodeContents(snip); getSelection().removeAllRanges(); getSelection().addRange(r); };
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, select); else select();
 });
+
+// Anyone can announce any model name, and these end up in commands people
+// paste. Offer only names that are safe in a shell, and only a few of them.
+const SAFE_NAME = /^[A-Za-z0-9][A-Za-z0-9._\/:+@-]{0,127}$/;
+const MAX_ROWS = 4;
+let modelsKey = "";
+function renderModels(list) {
+  const safe = list.filter(m => SAFE_NAME.test(m.id)).slice(0, MAX_ROWS);
+  const key = JSON.stringify(safe);
+  if (key === modelsKey) return;
+  modelsKey = key;
+  const box = document.getElementById("models");
+  if (!safe.some(m => m.id === model)) model = safe.length ? safe[0].id : "";
+  if (!safe.length) {
+    const d = document.createElement("div");
+    d.className = "empty";
+    d.textContent = "No model is online right now.";
+    box.replaceChildren(d);
+  } else {
+    box.replaceChildren(...safe.map(m => {
+      const row = document.createElement("label");
+      row.className = "model";
+      const input = document.createElement("input");
+      input.type = "radio"; input.name = "model"; input.value = m.id; input.checked = m.id === model;
+      const name = document.createElement("span");
+      name.className = "name"; name.textContent = m.id; name.title = m.id;
+      const meta = document.createElement("span");
+      meta.className = "meta"; meta.textContent = m.nodes + (m.nodes === 1 ? " node" : " nodes");
+      row.append(input, name, meta);
+      return row;
+    }));
+  }
+  renderClient();
+}
+document.getElementById("models").addEventListener("change", e => { model = e.target.value; renderClient(); });
 
 // Live map. Reads /network.json, which the Worker answers from KV. The
 // snapshot holds counts per model and per ~156 km cell, no peer ids or
-// addresses. Cells close on screen merge into one circle.
+// addresses. Cells close on screen merge into one square.
 (() => {
   const svg = document.getElementById("map-svg"), dots = document.getElementById("map-dots");
   const note = document.getElementById("map-note"), when = document.getElementById("map-time");
   const tbody = document.getElementById("map-models");
+  const net = document.getElementById("net"), netText = document.getElementById("net-text");
   const NS = "http://www.w3.org/2000/svg";
   let data = null, picked = null;
 
   const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  const square = (cls, x, y, r, label) => el("rect", { class: cls, x: x - r, y: y - r, width: 2 * r, height: 2 * r, tabindex: 0, role: "button", "aria-label": label });
   const unitPx = () => (svg.getBoundingClientRect().width || 700) / 360;
   const deg = (v, pos, neg) => Math.abs(v).toFixed(0) + "°" + (v >= 0 ? pos : neg);
   const list = models => Object.entries(models).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([m, n]) => m + (n > 1 ? " ×" + n : "")).join(", ");
+  const status = (on, text) => { net.classList.toggle("on", on); netText.textContent = text; };
 
   function clusters(cells) {
     const reach = 26 / unitPx(), out = [];
@@ -298,11 +667,16 @@ document.addEventListener("click", e => {
       (d.unlocated ? ", " + d.unlocated + " without a declared location" : "") + ".";
   }
 
-  function show(what, circle) {
+  function show(what, shape) {
     for (const e of dots.querySelectorAll(".on")) e.classList.remove("on");
     if (!what || picked === what.key) { picked = null; note.textContent = summary(); return; }
-    picked = what.key; circle.classList.add("on");
+    picked = what.key; shape.classList.add("on");
     note.textContent = what.text;
+  }
+  function pickable(shape, key, text) {
+    shape.addEventListener("click", () => show({ key, text }, shape));
+    shape.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show({ key, text }, shape); } });
+    if (picked === key) shape.classList.add("on");
   }
 
   function draw() {
@@ -313,23 +687,19 @@ document.addEventListener("click", e => {
       const key = k.x.toFixed(1) + "," + k.y.toFixed(1);
       const text = "Around " + deg(k.lat, "N", "S") + " " + deg(k.lon, "E", "W") + ": " + k.nodes +
         (k.nodes === 1 ? " node" : " nodes") + (k.cells > 1 ? " in " + k.cells + " nearby cells" : "") + ". " + list(k.models) + ".";
-      const c = el("circle", { class: "c", cx: k.x, cy: k.y, r: r(k.nodes), tabindex: 0, role: "button", "aria-label": text });
-      c.addEventListener("click", () => show({ key, text }, c));
-      c.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show({ key, text }, c); } });
+      const c = square("c", k.x, k.y, r(k.nodes), text);
+      pickable(c, key, text);
       dots.append(c);
       if (k.nodes > 1) { const t = el("text", { x: k.x, y: k.y, "font-size": fs }); t.textContent = k.nodes; dots.append(t); }
-      if (picked === key) c.classList.add("on");
     }
     if (data.unlocated) {
-      const n = data.unlocated, x = 64, y = 122, key = "unlocated";
+      const n = data.unlocated, x = 64, y = 122;
       const text = n + (n === 1 ? " node has" : " nodes have") + " not declared a location, so they are counted here and not placed on the map.";
-      const c = el("circle", { class: "u", cx: x, cy: y, r: r(n), tabindex: 0, role: "button", "aria-label": text });
-      c.addEventListener("click", () => show({ key, text }, c));
-      c.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show({ key, text }, c); } });
+      const c = square("u", x, y, r(n), text);
+      pickable(c, "unlocated", text);
       const t = el("text", { class: "un", x, y, "font-size": fs }); t.textContent = n;
       const l = el("text", { class: "ul", x, y: y + r(n) + fs, "font-size": fs }); l.textContent = "no location";
       dots.append(c, t, l);
-      if (picked === key) c.classList.add("on");
     }
   }
 
@@ -341,18 +711,17 @@ document.addEventListener("click", e => {
       return;
     }
     for (const m of data.models) {
-      const tr = tbody.insertRow(), c = document.createElement("code");
-      c.textContent = m.id;
-      tr.insertCell().append(c);
-      tr.insertCell().textContent = m.nodes;
-      tr.insertCell().textContent = m.free + " of " + m.max;
+      const tr = tbody.insertRow(), name = tr.insertCell();
+      name.textContent = m.id; name.title = m.id;
+      const nodes = tr.insertCell(); nodes.className = "n"; nodes.textContent = m.nodes;
+      const free = tr.insertCell(); free.className = "n"; free.textContent = m.free + " of " + m.max;
     }
   }
 
   function totals() {
     const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
     if (!data || !data.updated) {
-      for (const id of ["stat-nodes", "stat-models", "stat-free", "stat-slots"]) set(id, "—");
+      for (const id of ["stat-nodes", "stat-models", "stat-free", "stat-slots"]) set(id, "-");
       return;
     }
     set("stat-nodes", data.nodes);
@@ -370,21 +739,66 @@ document.addEventListener("click", e => {
       data = d;
       totals();
       const t = d.updated ? new Date(d.updated) : null;
-      const fresh = t && !isNaN(t) && Date.now() - t.getTime() < 15 * 60 * 1000;
-      when.textContent = t && !isNaN(t) ? "updated " + t.toISOString().slice(11, 16) + " UTC" + (fresh ? "" : " · stale") : "no snapshot yet";
+      const known = t && !isNaN(t), fresh = known && Date.now() - t.getTime() < 15 * 60 * 1000;
+      when.textContent = known ? "// updated " + t.toISOString().slice(11, 16) + " UTC" + (fresh ? "" : ", stale") : "// no snapshot yet";
+      if (!known) status(false, "No snapshot yet");
+      else if (!fresh) status(false, "Snapshot is stale");
+      else status(d.nodes > 0, d.nodes + (d.nodes === 1 ? " node" : " nodes") + " serving " + d.models.length + (d.models.length === 1 ? " model" : " models"));
       if (!picked) note.textContent = summary();
-      draw(); table();
+      draw(); table(); renderModels(d.models);
     } catch (e) {
       if (!data) {
         note.textContent = "Live data is not available right now. Every node still answers GET /network locally.";
-        when.textContent = "offline";
+        when.textContent = "// offline";
+        status(false, "Live data unavailable");
         tbody.replaceChildren();
         totals();
+        renderModels([]);
       }
     }
   }
   load(); setInterval(load, 60000);
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(draw, 150); });
+})();
+
+// Version and releases, from GitHub. On any failure the version and the list
+// stay hidden and the links still work, so nothing hard-coded goes stale.
+(() => {
+  const KEY = "bitllm-releases", TTL = 60 * 60 * 1000;
+  function render(releases) {
+    const list = releases.filter(r => !r.prerelease && !r.draft && r.tag_name).slice(0, 4);
+    if (!list.length) return;
+    const tag = list[0].tag_name;
+    for (const e of document.querySelectorAll("[data-version]")) { e.textContent = tag; e.hidden = false; }
+    for (const e of document.querySelectorAll("[data-version-link]")) { e.textContent = tag; e.href = list[0].html_url; }
+    for (const e of document.querySelectorAll("[data-version-row]")) e.hidden = false;
+    const box = document.getElementById("rel-list");
+    box.replaceChildren(...list.map(r => {
+      const a = document.createElement("a");
+      a.className = "rel"; a.href = r.html_url;
+      const time = document.createElement("time");
+      time.textContent = (r.published_at || "").slice(0, 10);
+      const b = document.createElement("b");
+      b.textContent = r.tag_name;
+      const title = document.createElement("span");
+      title.textContent = (r.name || "").replace(/^v?[\d.]+:?\s*/, "");
+      a.append(time, b, title);
+      return a;
+    }));
+    box.hidden = false;
+  }
+  let cached = null;
+  try { cached = JSON.parse(sessionStorage.getItem(KEY)); } catch {}
+  if (cached && Date.now() - cached.at < TTL && Array.isArray(cached.releases)) { render(cached.releases); return; }
+  fetch("https://api.github.com/repos/bitllm-org/bitllm/releases?per_page=8")
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(releases => {
+      if (!Array.isArray(releases)) return;
+      const slim = releases.map(({ tag_name, name, html_url, published_at, prerelease, draft }) => ({ tag_name, name, html_url, published_at, prerelease, draft }));
+      try { sessionStorage.setItem(KEY, JSON.stringify({ at: Date.now(), releases: slim })); } catch {}
+      render(slim);
+    })
+    .catch(() => {});
 })();
 </script>
 </body>
