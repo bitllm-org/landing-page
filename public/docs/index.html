@@ -76,12 +76,12 @@
     <h2 id="overview">Overview</h2>
     <p>Four loops run inside a serving node. A node that only uses the network runs the gateway and listens to gossip:</p>
     <ul>
-      <li><strong>Gossip.</strong> Every 10 seconds a serving node publishes an announce: version, the models it serves, free slots, queue depth, whether it can relay, and optionally a coarse location and weight hashes. Peers keep the latest announce for three periods, so a node that stops answering disappears from routing within about 35 seconds.</li>
-      <li><strong>DHT providers.</strong> Every two minutes a serving node records itself as a provider of each model it serves, under a key derived from the model name. Provider records expire after 24 hours; the refresh repairs a record lost while the DHT had no peers.</li>
+      <li><strong>Gossip.</strong> Every 10 seconds a serving node or public relay publishes an announce: version, the models it serves, free slots, queue depth, whether it can relay, and optionally a coarse location and weight hashes. Peers keep the latest announce for three periods, so a node that stops answering disappears from routing within about 35 seconds.</li>
+      <li><strong>DHT providers.</strong> A serving node records itself as a provider of each model it announces, under a key derived from the model name. It does so at start, when its models change, when a seed connects, when its own addresses change, and otherwise every 30 minutes. A record stays valid for 48 hours and the address in it for 24. A node that does not know a model's servers yet looks them up by name.</li>
       <li><strong>Upstream check.</strong> A serving node asks its local model server for <code>/models</code> before it announces. A stopped vLLM makes the node go quiet instead of advertising capacity it cannot use.</li>
       <li><strong>Gateway.</strong> The local HTTP server on <code>127.0.0.1:7778</code> accepts OpenAI and Anthropic requests, chooses a peer, and streams the answer back. It is the only part a user normally touches.</li>
     </ul>
-    <p>Only three things are centrally hosted, and none of them carries inference traffic: the DNS seed list, the static site and installers, and GitHub releases. DNS is read once at startup (and on redial); after that, peers find each other.</p>
+    <p>Four things are centrally hosted, and none of them carries inference traffic: the DNS seed list, the static site and installers, GitHub releases, and the map snapshot in Cloudflare KV. Three more still rest on one party: one root key at the top of the invite tree, auto-update from releases signed with keys in the binary, and the auditor the maintainers run as the <code>--audit</code> default. DNS is used only to find seeds; after that, peers find each other.</p>
 
     <h2 id="roles">Roles and reachability</h2>
     <p>Roles are not separate programs. They are combinations of flags and network position.</p>
@@ -90,17 +90,17 @@
       <table>
         <thead><tr><th>role</th><th>how it starts</th><th>what it needs</th><th>what it does</th></tr></thead>
         <tbody>
-          <tr><td><strong>client</strong></td><td><code>bitllm</code></td><td>outbound internet</td><td>local gateway only; no model, no inbound port</td></tr>
+          <tr><td><strong>client</strong></td><td><code>bitllm</code></td><td>outbound internet</td><td>local gateway only; no model, needs no inbound port</td></tr>
           <tr><td><strong>serving node</strong></td><td><code>--upstream URL</code></td><td>a local OpenAI-compatible server</td><td>announces models, accepts inference streams, signs receipts</td></tr>
-          <tr><td><strong>public relay</strong></td><td><code>--public --upstream URL</code></td><td>inbound TCP and UDP 4001, and a model to serve</td><td>DHT server, relay for NATed peers; still joins the seeds</td></tr>
+          <tr><td><strong>public relay</strong></td><td><code>--public</code></td><td>inbound TCP and UDP 4001</td><td>DHT server, relay for NATed peers; still joins the seeds; add <code>--upstream URL</code> to serve a model too</td></tr>
           <tr><td><strong>seed</strong></td><td><code>--dht-server</code></td><td>a public relay listed in DNS</td><td>first contact; starts alone, answers DHT queries, relays</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p>A <strong>serving node</strong> can be behind NAT or CGNAT. It does not need a public address or a port forward: it reserves a relay slot and, when the routers cooperate, upgrades to a direct connection. A <strong>public relay</strong> is any host that can accept inbound TCP and UDP on 4001; it needs no DNS record, but today it must serve a model: a node announces only with <code>--upstream</code>, and peers reject an announce with no models. A <strong>seed</strong> is a public relay that is also named in <code>_dnsaddr.bootstrap.bitllm.org</code>, so a fresh install can find it without knowing anyone.</p>
+    <p>A <strong>serving node</strong> can be behind NAT or CGNAT. It does not need a public address or a port forward: it reserves a relay slot and, when the routers cooperate, upgrades to a direct connection. A <strong>public relay</strong> is any host that can accept inbound TCP and UDP on 4001. It needs no DNS record and no model: a bare <code>--public</code> relay works once the seeds run v0.5.0, because they forward an announce that lists no models. A <strong>seed</strong> is a public relay that is also named in <code>_dnsaddr.bootstrap.bitllm.org</code>, so a fresh install can find it without knowing anyone.</p>
 
-    <p>This split is deliberate. One seed is enough to join, but it must not be the only relay: relay capacity should grow with the number of public nodes, not with DNS edits. Every public node that serves a model announces <code>relay=true</code>; NATed nodes add those peers to their autorelay candidate set alongside the seeds.</p>
+    <p>This split is deliberate. One seed is enough to join, but it must not be the only relay: relay capacity should grow with the number of public nodes, not with DNS edits. Every public node announces <code>relay=true</code>; NATed nodes add those peers to their autorelay candidate set alongside the seeds.</p>
 
     <h2 id="first-contact">First contact</h2>
     <p>A node with no <code>--bootstrap</code> resolves <code>/dnsaddr/bootstrap.bitllm.org</code>. Each <code>dnsaddr=</code> TXT record at that name is one seed multiaddr, so seeds can be added or retired without a release. The production list currently names <code>seed1.bitllm.org</code> over TCP and QUIC. The node also carries the old <code>boot.bitllm.org</code> tunnel as a literal fallback for one more release. A <code>--bootstrap</code> value that names a peer directly is a <strong>join code</strong>; it works even when DNS does not.</p>
@@ -117,15 +117,16 @@
     <p>Two mechanisms run in parallel, because they answer different questions.</p>
 
     <h3>Gossip: who is online now</h3>
-    <p>Every node subscribes to a libp2p pubsub topic, and a serving node publishes an announce every 10 seconds. The announce is small and unsigned beyond transport identity:</p>
+    <p>Every node subscribes to a libp2p pubsub topic, but not every node announces. A client-only node stays silent, a serving node publishes an announce every 10 seconds, and a public relay with no model publishes one that lists no models. The announce is small and unsigned beyond transport identity:</p>
     <pre><code>{
-  "v": "v0.4.6",
+  "v": "v0.5.0",
   "models": ["Qwen/Qwen3.8-Flash-Next"],
-  "free": 1, "max": 2, "q": 0,
+  "free": 1, "max": 2, "q": 1,
   "relay": true,
   "loc": "u33",
-  "weights": {"Qwen/Qwen3.8-Flash-Next": "sha256-..."}
+  "weights": {"Qwen/Qwen3.8-Flash-Next": "&lt;64 hex digits&gt;"}
 }</code></pre>
+    <p><code>v</code> is the release tag. <code>q</code> and <code>relay</code> appear only when there is a queue or the node is public. <code>loc</code> is a three-character geohash cell, sent only with <code>--location</code>. A weight hash is the 64 lowercase hex digits that <code>bitllm hash-model</code> prints, sent only with <code>--weights</code>.</p>
     <p>An announce is trusted only while it is fresh: a peer last seen within <code>3 × announce interval + 5 s</code> (about 35 seconds) is a routing candidate. That gives fast failure detection without a heartbeat server. A server that stops answering goes quiet on its next failed upstream check, and clients stop choosing it within three periods.</p>
 
     <h3>DHT: who serves this model, ever</h3>
@@ -140,7 +141,7 @@
     <ol>
       <li>It reserves a slot on a relay: the seeds first, then public relays discovered through gossip. The reservation is a libp2p circuit address.</li>
       <li>Peers dial the circuit address. The relay forwards the first bytes and never sees plaintext, because the stream is end-to-end encrypted.</li>
-      <li>Both sides attempt hole punching. If the routers allow it, the connection upgrades to direct and the relay leaves the path. If not, the circuit stays for the life of the stream.</li>
+      <li>Both sides attempt hole punching, and each sends the other its listen addresses to do it. If the routers allow it, the connection upgrades to direct and the relay leaves the path. If not, the circuit stays for the life of the stream.</li>
     </ol>
 
     <p>Relay candidates are the seeds plus every recently seen peer that announced <code>relay=true</code>, shuffled so a new public relay gets traffic without a coordinated rollout. A node limits how many relays it reserves on, and it never treats a relay as a model server unless that relay also serves the model.</p>
@@ -148,10 +149,10 @@
     <p>Transport encryption is Noise/TLS/QUIC depending on the transport. The serving machine still reads the plaintext prompt; encryption protects the path, not the endpoint.</p>
 
     <h2 id="request">Request path</h2>
-    <p>The gateway listens only on localhost. A request goes through these steps:</p>
+    <p>The gateway listens on localhost unless <code>--gateway</code> says otherwise. A request goes through these steps:</p>
     <ol>
       <li><strong>Parse and bound.</strong> The body is read up to a fixed limit, the model is read, and image-heavy requests are defused for older peers. Malformed JSON is a <code>400</code>.</li>
-      <li><strong>Own model first.</strong> If this node shares the requested model and its upstream is up, the request is answered locally. It never leaves the machine, costs nothing, and is not metered as network work. If the local server is down, the gateway falls through to peers that serve the same model.</li>
+      <li><strong>Own model stays here.</strong> If this node shares the requested model, the request is answered locally. It never leaves the machine, costs nothing, and is not metered as network work. If the local server is down, the gateway answers <code>503</code>. With <code>--peer-fallback</code> it tries peers that serve the same model instead, and those peers can read the request.</li>
       <li><strong>Candidates.</strong> Peers are filtered by fresh announce, by model, by weight hash when the model manifest records one, and by audit status. They are ranked by free slots, queue depth and measured latency. A peer never dialed has no latency and ranks behind a peer that just answered.</li>
       <li><strong>Try up to three.</strong> For each candidate the gateway opens an inference stream with a bounded wait. A server with no free slot keeps the request in its own queue; the client waits up to its own deadline. A server that refuses the caller outright (<code>403</code>, an allow list) is skipped for the rest of the request.</li>
       <li><strong>Stream.</strong> The serving node forwards the upstream response. Tokens are written to the local client as they arrive; a disconnect on either side tears down the stream. The response carries <code>X-Bitllm-Peer</code>, the peer id that answered.</li>
@@ -170,14 +171,16 @@
     <p>Other serving behavior:</p>
     <ul>
       <li><strong>Concurrency.</strong> <code>--concurrency</code> is how many requests the upstream can take in parallel. Extra requests wait in the node's queue; the announce reports free slots and depth so clients can choose.</li>
+      <li><strong>Request fields.</strong> A host forwards only the request fields it knows from a peer: the standard OpenAI and Anthropic fields and the audit fields. Images must be <code>data:</code> URLs, and a <code>/completions</code> request carries one prompt. <code>--peer-field NAME</code> adds a field and can be repeated. Requests written on your own machine are not filtered.</li>
+      <li><strong>Upstream limit.</strong> <code>--upstream-timeout</code> is the longest your server may take to send response headers; the default is 10 minutes. A non-streaming answer sends them only after generating.</li>
       <li><strong>Images.</strong> If the upstream caps images per prompt (vLLM's <code>--limit-mm-per-prompt</code>), the node learns the cap from the first refusal and keeps only the newest N images, replacing older ones with a short note. Long agent sessions therefore do not fail on every turn.</li>
       <li><strong>Token cap.</strong> <code>--max-tokens</code> bounds new tokens per peer request (default 32768). A peer gets one choice per request; <code>n</code> is dropped.</li>
-      <li><strong>Quotas.</strong> <code>--free-daily</code> sets a per-member daily quota; the default is unlimited. A contributor is never limited by quota.</li>
+      <li><strong>Quotas.</strong> <code>--free-daily</code> sets a per-member daily quota; the default is unlimited. A contributor has no quota on a server that asked its node for a job in the last 7 days.</li>
       <li><strong>Allow lists.</strong> <code>--allow PEER_ID</code> serves only the listed peers and refuses everyone else. The error names the caller's peer id, so the owner can add it.</li>
       <li><strong>Weights.</strong> <code>--weights NAME=HASH</code> states what the server loads, from <code>bitllm hash-model DIR</code>. It is a claim, not a proof. When the model manifest records a canonical hash, clients skip peers that announce a different one.</li>
     </ul>
 
-    <p>A node that shares a model answers that model itself first. Its own traffic never consumes a network slot, and it does not earn credits from itself.</p>
+    <p>A model you share stays on your machine unless <code>--peer-fallback</code> is set and your server is down. Your own requests are never refused. They hold a slot, so the free count the node announces stays true, and the node earns no credits from itself.</p>
 
     <h2 id="models">Model names</h2>
     <p>A model name is the string clients send. Two machines that announce the same string are interchangeable for it: the gateway picks one, and if it stops answering it tries another. The name must therefore identify the weights, not the machine.</p>
@@ -198,18 +201,18 @@
       <li>The serving node checks the claim against what it sent and countersigns. A receipt that does not match the token formula is rejected.</li>
       <li>The receipt is gossiped. Any node can verify both signatures, recompute the credit (<code>prompt tokens / 4 + completion tokens</code>), and aggregate per server.</li>
     </ol>
-    <p>Credits are a public count, not a token or a promise. A new node catches up from its bootstrap peers; a node accepts at most 120 receipts a minute per server and 600 overall from gossip, which bounds flooding. Receipts live in <code>~/.bitllm/receipts.jsonl</code>, and <code>GET /credits</code> returns the current table.</p>
+    <p>Credits are a public count, not a token or a promise. They are self-reported: both signatures show what the two sides claim, not that the work happened, and a node's table depends on the receipts it has heard. A new node catches up from its bootstrap peers; a node accepts at most 120 receipts a minute per server and 600 overall from gossip, which bounds flooding. Receipts live in <code>~/.bitllm/receipts.jsonl</code>, and <code>GET /credits</code> returns the current table.</p>
     <p>What counts toward future value is not decided yet. Self-dealing through fake clients, or serving a model other than the one named, is expected to be excluded when the rule is published.</p>
 
     <h2 id="access">Access</h2>
     <p>The beta is invite-only in the BitTorrent sense: no account is needed to try the network, and membership decides who gets a free slot first, not who can connect.</p>
     <ul>
-      <li>An <strong>invite</strong> is a signature from an Ethereum account. Nodes gossip invites; there is no membership server. Revoking an account removes everyone it invited.</li>
+      <li>An <strong>invite</strong> is a signature from an Ethereum account. Nodes gossip invites; there is no membership server. Revoking an account takes membership from it and from everyone it invited; they are then served like uninvited nodes.</li>
       <li>A member is served on any free slot. An uninvited node is served only when a server is idle, unless its owner starts with <code>--open</code>.</li>
-      <li>Sharing makes a node a <strong>contributor</strong>: never limited by quota, and 10 invites instead of 3 once its nodes have served.</li>
+      <li>Sharing makes you a <strong>contributor</strong>: 10 invites instead of 3 once your nodes have served, and no quota on a server that asked your node for a job in the last 7 days.</li>
       <li>A server owner can still restrict serving to an allow list (<code>--allow</code>) or set a daily quota. Those are per-server decisions, not network policy.</li>
     </ul>
-    <p>The membership roots are Ethereum addresses in the binary's defaults. A node with no roots treats every node as a member, which is useful for a private test network.</p>
+    <p>The membership root is one Ethereum address in the binary's defaults; <code>--roots</code> replaces it. A node with no roots treats every node as a member, which is useful for a private test network.</p>
 
     <h2 id="audits">Audits</h2>
     <p>A node can claim a model it does not serve. Auditing is an opt-in spot check, not a proof:</p>
@@ -217,14 +220,17 @@
       <li>With <code>--audit</code>, about one request in 50 to a peer is followed by a canary request. Another node, the auditor, scores the answer token by token.</li>
       <li>The default auditor is a node run by the maintainers. <code>--auditor PEER_ID</code> replaces it; <code>--auditor none</code> drops it.</li>
       <li>A peer that keeps failing gets no requests for that model for 24 hours. <code>GET /audits</code> shows the results.</li>
-      <li>It finds a server running a different model, and a coarse quant on greedy requests. It does not find a server that recognizes canaries, a quant swap on sampled requests only, or a light fine-tune swap. An auditor can lie in either direction. A shuffled control catches only an auditor that passes everything.</li>
+      <li>It finds a server running a different model, and a coarse quant on greedy requests. It does not find a server that recognizes canaries, a quant swap on sampled requests only, or a light fine-tune swap. An auditor can lie in either direction. A shuffled control catches only an auditor that passes everything. The canary prompts are public in the source.</li>
     </ul>
     <p>Auditing is off by default because it costs a second request and a second node. Turning it on improves the experience for that node without changing the network's guarantees.</p>
 
     <h2 id="privacy">Privacy boundary</h2>
     <ul>
       <li><strong>The serving peer reads the prompt in plain text.</strong> Transport is encrypted, but the GPU host is an endpoint. Do not send secrets.</li>
-      <li><strong>A peer you connect to directly sees your IP address.</strong> A relayed peer sees the relay's address instead. The serving peer sees your node id either way.</li>
+      <li><strong>A peer you connect to directly sees your IP address.</strong> A relayed peer sees the relay's address on that connection. The serving peer sees your node id either way.</li>
+      <li><strong>Hole punching sends your listen addresses to the other peer.</strong> A node sends them when it tries to turn a relayed connection into a direct one, so a peer reached through a relay can still learn them.</li>
+      <li><strong>Nodes bind all interfaces.</strong> Every node, including a client, listens on the p2p port on all IPv4 and IPv6 interfaces. UPnP asks your router to forward that port and mDNS looks for peers on your local network; both are on by default. <code>--upnp=false</code>, <code>--mdns=false</code> and <code>--ipv6=false</code> turn these off.</li>
+      <li><strong>Linking a wallet is public.</strong> A claim ties your node id to your wallet address and display name, and every node can read it.</li>
       <li><strong>A location is opt-in.</strong> <code>--location LAT,LON</code> is turned into a three-character geohash cell (about 156 km by 156 km) before it leaves the machine. The point itself is never announced. Without it, the node is counted as "no location".</li>
       <li><strong>IP geolocation is not used</strong>, on purpose: it would place people who never asked, and for relayed nodes it would often place the relay instead.</li>
       <li><strong>Receipts are pseudonymous.</strong> A client signs with one key per server, rotated every 30 days, so a receipt links a server to work but not to the person who asked. That server can link one client's jobs to each other.</li>
@@ -238,11 +244,11 @@
           <tr><td>a seed is down</td><td>other DNS records still resolve; redial every 15 s</td><td>slower first contact, then normal</td></tr>
           <tr><td>DNS does not resolve</td><td>fallback tunnel, then start alone</td><td>node prints its addresses; a join code can attach it</td></tr>
           <tr><td>a serving node stops</td><td>announce expires in ~35 s; DHT record expires in a day</td><td>clients route elsewhere; cold lookups may still list it</td></tr>
-          <tr><td>an upstream stops</td><td>node stops announcing models; local gateway falls through to peers</td><td><code>upstream ...: up=false</code> in the log</td></tr>
+          <tr><td>an upstream stops</td><td>node stops announcing models; requests for your own model get <code>503</code> unless <code>--peer-fallback</code> is set</td><td><code>upstream ...: up=false</code> in the log</td></tr>
           <tr><td>every server is full</td><td>queueing, then retry until the client deadline</td><td><code>429 busy ...</code></td></tr>
           <tr><td>no server for a model</td><td>DHT lookup, then failure</td><td><code>503 no peer serves model X</code></td></tr>
           <tr><td>a relay dies</td><td>reservation is lost; node reserves on another public relay or the seed</td><td>streams blip; clients redial</td></tr>
-          <tr><td>the self-update restarts a node</td><td>restart happens only while idle; after 30 minutes with no idle moment it gives up and the next start uses the new binary; same peer id and data dir</td><td>a short gap in announces</td></tr>
+          <tr><td>the self-update restarts a node</td><td>restart waits for idle, for up to 24 hours, then happens anyway; after three failed starts the node goes back to the previous binary; same peer id and data dir</td><td>a short gap in announces</td></tr>
         </tbody>
       </table>
     </div>
@@ -256,23 +262,22 @@
 
     <h3>Run a public relay</h3>
     <pre><code>bitllm --public --port 4001 \
-  --upstream http://localhost:8000/v1 \
   --announce /ip4/203.0.113.11/tcp/4001 \
   --announce /ip4/203.0.113.11/udp/4001/quic-v1</code></pre>
-    <p><code>--public</code> is a public DHT server and relay that still joins the default seeds. It must also serve a model, because only a serving node announces. It needs no DNS record: NATed nodes discover it through its <code>relay=true</code> announce and add it to their relay candidates. This is how relay capacity grows without editing DNS.</p>
+    <p><code>--public</code> is a public DHT server and relay that still joins the default seeds. It needs no model: a bare <code>--public</code> relay works once the seeds run v0.5.0. Add <code>--upstream URL</code> to serve a model as well. It needs no DNS record: NATed nodes discover it through its <code>relay=true</code> announce and add it to their relay candidates. This is how relay capacity grows without editing DNS.</p>
 
     <h3>Keep a node running</h3>
     <p>Use a systemd unit (Linux) or a LaunchAgent (macOS) with restart-on-failure. Keep the data directory: it holds the peer identity, receipts, claims and quota state. A node that loses its data directory comes back as a new peer.</p>
 
     <h3>Updates</h3>
-    <p>A release build checks for a newer release 30 seconds after start and every 6 hours, verifies the binary against the release's <code>SHA256SUMS</code>, and restarts in place when the node is idle: same unit, same peer id. <code>--auto-update=false</code> disables it; <code>bitllm update</code> installs now. The previous binary is kept as <code>bitllm.prev</code>. Builds from source never update themselves.</p>
+    <p>Nodes update only to a release signed with a key in the binary. A release with a missing or wrong signature is refused and the running binary stays as it is. A release build checks for a newer release 30 seconds after start and every 6 hours, verifies the binary against the release's signed <code>SHA256SUMS</code>, and restarts in place when the node is idle: same unit, same peer id. If the node stays busy it restarts anyway after 24 hours. <code>--auto-update=false</code> disables it; <code>bitllm update</code> installs now, <code>bitllm update --check</code> only reports, and <code>bitllm update --tag vX.Y.Z</code> installs one named release through the same checks. The previous binary is kept as <code>bitllm.prev</code>, and after three failed starts of a release it installed by itself, the node goes back to it. Builds from source never update themselves.</p>
 
     <h3>Ports</h3>
-    <p>4001 TCP and UDP is the p2p port. 7778 is the local gateway and listens on <code>127.0.0.1</code> only. The gateway refuses non-local <code>Host</code> headers, so a browser on the LAN cannot reach it by the machine's name.</p>
+    <p>4001 TCP and UDP is the p2p port. 7778 is the local gateway and listens on <code>127.0.0.1</code> unless <code>--gateway</code> moves it; set <code>--gateway-key</code> if other machines can reach it. The gateway refuses non-local <code>Host</code> headers, so a browser on the LAN cannot reach it by the machine's name.</p>
 
     <h2 id="map">The map</h2>
     <p>Every node can produce an aggregate of the network at <code>GET /network</code>: counts per model, per version, and per ~156 km geohash cell, plus how many nodes did not declare a location. It contains no peer ids and no addresses.</p>
-    <p>The map at bitllm.org is a snapshot of one node's <code>/network</code>, copied into Cloudflare KV about every ten minutes by a scheduled job and served as <code>/network.json</code>. The uploader never accepts inbound requests. The page fetches the snapshot once a minute; if the key is empty it shows an empty network rather than failing. Counts are for serving nodes only, so a client-only node does not appear.</p>
+    <p>The map at bitllm.org is a snapshot of one node's <code>/network</code>, copied into Cloudflare KV about every ten minutes by a scheduled GitHub workflow and served as <code>/network.json</code>. The uploader never accepts inbound requests. The page fetches the snapshot once a minute. Scheduled runs can run late, so a snapshot past 30 minutes is marked stale and the totals blank out. The key expires one hour after the last write, so a publisher that stops leaves no numbers rather than old ones, and the page shows an empty network instead of failing. Counts are for serving nodes only, so a client-only node does not appear.</p>
     <p>Only operators who passed <code>--location</code> are placed. The rest are counted in the "no location" bucket. Nothing is inferred from IP addresses.</p>
 
     <h2 id="reference">Reference</h2>
@@ -302,27 +307,42 @@
         <thead><tr><th>flag</th><th>effect</th></tr></thead>
         <tbody>
           <tr><td><code>--upstream URL</code></td><td>share an OpenAI-compatible server</td></tr>
+          <tr><td><code>--upstream-key KEY</code></td><td>API key for the upstream; <code>BITLLM_UPSTREAM_KEY</code> keeps it out of the process list</td></tr>
+          <tr><td><code>--upstream-timeout D</code></td><td>longest your server may take to send response headers; default 10 minutes</td></tr>
+          <tr><td><code>--peer-fallback</code></td><td>if your own server is down, send requests for your model to peers, which can read them; off by default</td></tr>
+          <tr><td><code>--peer-field NAME</code></td><td>request field peers may send to your server beyond the standard ones; repeatable</td></tr>
+          <tr><td><code>--gateway ADDR</code></td><td>where the gateway listens; default <code>127.0.0.1:7778</code></td></tr>
+          <tr><td><code>--gateway-key KEY</code></td><td>key every gateway request except the dashboard page must carry, as <code>Authorization: Bearer</code> or <code>x-api-key</code>; <code>BITLLM_GATEWAY_KEY</code> keeps it out of the process list</td></tr>
           <tr><td><code>--model local=public</code></td><td>rename a local id, or pin a subset; stops the 30 s refresh</td></tr>
           <tr><td><code>--concurrency N</code></td><td>parallel requests the upstream accepts</td></tr>
-          <tr><td><code>--public</code></td><td>public DHT server and relay; joins the seeds; announced only with <code>--upstream</code></td></tr>
+          <tr><td><code>--public</code></td><td>public DHT server and relay; joins the seeds; needs no model</td></tr>
           <tr><td><code>--dht-server</code></td><td>start as a seed; does not need the default seeds</td></tr>
           <tr><td><code>--bootstrap ADDR</code></td><td>join through a specific peer (a join code)</td></tr>
           <tr><td><code>--location LAT,LON</code></td><td>declare a coarse location for the map</td></tr>
           <tr><td><code>--audit</code>, <code>--auditor ID</code></td><td>spot-check peers that answer you</td></tr>
+          <tr><td><code>--audit-every N</code></td><td>with <code>--audit</code>: real requests to a peer between spot checks; default 50</td></tr>
+          <tr><td><code>--audit-serve</code></td><td>offer this node as an auditor, if its server returns prompt logprobs</td></tr>
+          <tr><td><code>--roots ADDR</code></td><td>root account of the invite tree, for private networks and tests</td></tr>
           <tr><td><code>--allow PEER_ID</code></td><td>serve only listed peers</td></tr>
           <tr><td><code>--open</code></td><td>also serve uninvited nodes on spare slots</td></tr>
+          <tr><td><code>--open-slots N</code></td><td>with <code>--open</code>: most slots uninvited nodes may hold at once</td></tr>
+          <tr><td><code>--open-daily N</code></td><td>with <code>--open</code>: credits all uninvited nodes together may use per UTC day</td></tr>
           <tr><td><code>--free-daily N</code></td><td>per-member daily quota; 0 = unlimited</td></tr>
           <tr><td><code>--max-tokens N</code></td><td>cap new tokens per peer request</td></tr>
           <tr><td><code>--ipv6=false</code></td><td>do not listen on IPv6; keeps the p2p port off a public IPv6 address</td></tr>
+          <tr><td><code>--mdns=false</code></td><td>do not look for peers on the local network</td></tr>
+          <tr><td><code>--upnp=false</code></td><td>do not ask the router to forward the p2p port</td></tr>
           <tr><td><code>--auto-update=false</code></td><td>do not replace the binary on a new release</td></tr>
+          <tr><td><code>bitllm update --tag vX.Y.Z</code></td><td>install one named release through the same signature and checksum checks</td></tr>
+          <tr><td><code>bitllm invite --revoke 0xADDRESS</code></td><td>revoke an account; roots only</td></tr>
         </tbody>
       </table>
     </div>
 
     <h3>Ports and files</h3>
     <ul>
-      <li><code>4001/tcp</code>, <code>4001/udp</code>: libp2p; inbound only on public nodes.</li>
-      <li><code>127.0.0.1:7778</code>: gateway and dashboard; never exposed.</li>
+      <li><code>4001/tcp</code>, <code>4001/udp</code>: libp2p; every node binds them on all interfaces, and only public nodes need inbound.</li>
+      <li><code>127.0.0.1:7778</code>: gateway and dashboard; local unless <code>--gateway</code> moves it.</li>
       <li><code>~/.bitllm/</code>: peer key, receipts, claims, quota, update state. Keep it to keep the identity.</li>
     </ul>
 

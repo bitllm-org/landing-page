@@ -9,7 +9,7 @@ setup page and lives in [bitllm-org/bitllm](https://github.com/bitllm-org/bitllm
 
 | path | what it is |
 |---|---|
-| `public/index.html` | the landing page: live map, install commands, roles, model naming, access rules |
+| `public/index.html`, `public/home.js` | the landing page and its script: live map, install commands, roles, model naming, access rules |
 | `public/docs/index.html` | the architecture page: discovery, connectivity, request path, receipts, audits, privacy |
 | `public/site.css` | the one stylesheet shared by both pages; its tokens follow the dashboard |
 | `public/fonts/` | JetBrains Mono and Arimo, from [bitllm-org/branding](https://github.com/bitllm-org/branding), so every OS shows the same letters |
@@ -17,18 +17,20 @@ setup page and lives in [bitllm-org/bitllm](https://github.com/bitllm-org/bitllm
 | `public/favicon.svg`, `public/logo-128.png` | the mark, from [bitllm-org/branding](https://github.com/bitllm-org/branding) |
 | `public/llms.txt` | setup runbook for AI agents, served at https://bitllm.org/llms.txt |
 | `public/install.sh`, `public/install.ps1` | the one-line installers served at https://bitllm.org/install.sh and `/install.ps1` |
-| `src/index.js` | the Worker: serves the assets and `/network.json` from KV |
+| `public/_headers` | headers on files, including HSTS and the Content-Security-Policy on `/` and `/docs/`; a new script or API origin goes here |
+| `src/index.js` | the Worker: answers `/network.json` from KV with a minute of edge cache. Files in `public/` bypass it |
 | `wrangler.jsonc` | Worker name, assets directory, KV binding and custom domains |
 | `scripts/check.sh` | the check that runs before every deploy |
 
 ## Live map
 
-`GET /network.json` is answered from the `network` key in the Worker's KV namespace. A
-scheduled job in the node repository writes that key about every ten minutes, or an always-on node
-can write it with
-[`scripts/network-kv.sh`](https://github.com/bitllm-org/bitllm/blob/main/scripts/network-kv.sh)
-from the node repository. The snapshot has counts per model and per ~156 km cell and no peer ids
-or addresses. If the key is empty the page shows an empty network instead of failing.
+`GET /network.json` is answered from the `network` key in the Worker's KV namespace. A GitHub
+workflow in the node repository writes that key every ten minutes, and the key expires one hour
+after the last write. The snapshot has counts per model and per ~156 km cell and no peer ids or
+addresses. If the key is empty the page shows an empty network instead of failing. If KV fails the
+Worker answers 503 with a JSON error and the page says live data is unavailable. The page marks a
+snapshot stale and blanks its totals after 30 minutes; scheduled runs can run late, so 15 minutes
+is ordinary.
 
 ## Editing
 

@@ -1,3 +1,14 @@
+# HTML pages. The page scripts, styles and fonts all come from this site, and
+# the home page also reads its release list from api.github.com. Files bypass
+# the Worker, so these headers cannot live in src/index.js.
+/
+  Strict-Transport-Security: max-age=31536000
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+/docs/
+  Strict-Transport-Security: max-age=31536000
+  Content-Security-Policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
 /install.ps1
   Content-Type: text/plain; charset=utf-8
 
