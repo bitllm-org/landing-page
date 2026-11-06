@@ -22,20 +22,14 @@ const JSON_HEADERS = {
   "access-control-allow-origin": "*",
 };
 
-async function network(request, env, ctx) {
-  const cache = caches.default;
-  // One entry per host, so a query string cannot force a KV read.
-  const key = new Request(new URL("/network.json", request.url).href);
-  const hit = await cache.match(key).catch(() => undefined);
-  if (hit) return hit;
-
+async function network(env) {
   let body;
   try {
     body = (await env.NETWORK.get("network")) ?? EMPTY;
   } catch (err) {
     console.error("network.json: KV read failed:", err);
     // The page treats any status but 2xx as "live data unavailable" and keeps
-    // what it already has. Not cached, so the next request tries KV again.
+    // what it already has.
     return new Response(
       JSON.stringify({ error: "The network snapshot is not available right now." }),
       {
@@ -44,20 +38,17 @@ async function network(request, env, ctx) {
       },
     );
   }
-
-  // The job writes every ten to fifteen minutes. A minute at the edge keeps the page
-  // current without turning every visitor into a KV read.
-  const response = new Response(body, {
+  // Not put in the Cache API: a response from there gets the zone's browser
+  // cache time, hours, whatever it says here. KV has its own edge cache.
+  return new Response(body, {
     headers: { ...JSON_HEADERS, "cache-control": "public, max-age=60" },
   });
-  ctx.waitUntil(cache.put(key, response.clone()).catch(() => {}));
-  return response;
 }
 
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
-    if (pathname === "/network.json") return network(request, env, ctx);
+    if (pathname === "/network.json") return network(env);
     return env.ASSETS.fetch(request);
   },
 
