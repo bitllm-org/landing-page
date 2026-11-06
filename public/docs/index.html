@@ -272,7 +272,7 @@
 
     <h2 id="map">The map</h2>
     <p>Every node can produce an aggregate of the network at <code>GET /network</code>: counts per model, per version, and per ~156 km geohash cell, plus how many nodes did not declare a location. It contains no peer ids and no addresses.</p>
-    <p>The map at bitllm.org is a snapshot of one always-on node's <code>/network</code>, copied into Cloudflare KV every two minutes and served as <code>/network.json</code>. The uploader never accepts inbound requests. The page fetches the snapshot once a minute; if the key is empty it shows an empty network rather than failing. Counts are for serving nodes only, so a client-only node does not appear.</p>
+    <p>The map at bitllm.org is a snapshot of one node's <code>/network</code>, copied into Cloudflare KV about every ten minutes by a scheduled job and served as <code>/network.json</code>. The uploader never accepts inbound requests. The page fetches the snapshot once a minute; if the key is empty it shows an empty network rather than failing. Counts are for serving nodes only, so a client-only node does not appear.</p>
     <p>Only operators who passed <code>--location</code> are placed. The rest are counted in the "no location" bucket. Nothing is inferred from IP addresses.</p>
 
     <h2 id="reference">Reference</h2>

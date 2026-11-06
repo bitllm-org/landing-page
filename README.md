@@ -23,8 +23,9 @@ setup page and lives in [bitllm-org/bitllm](https://github.com/bitllm-org/bitllm
 
 ## Live map
 
-`GET /network.json` is answered from the `network` key in the Worker's KV namespace. An
-always-on node writes that key every two minutes with
+`GET /network.json` is answered from the `network` key in the Worker's KV namespace. A
+scheduled job in the node repository writes that key about every ten minutes, or an always-on node
+can write it with
 [`scripts/network-kv.sh`](https://github.com/bitllm-org/bitllm/blob/main/scripts/network-kv.sh)
 from the node repository. The snapshot has counts per model and per ~156 km cell and no peer ids
 or addresses. If the key is empty the page shows an empty network instead of failing.
