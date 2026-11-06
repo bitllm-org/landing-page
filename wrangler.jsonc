@@ -14,6 +14,12 @@
       "id": "7295150c7ffd436b8e5eb845089d89ce"
     }
   ],
+  // Keeps /network.json fresh when the node repo's own cron does not fire: the
+  // Worker dispatches that workflow if the snapshot is more than 15 minutes
+  // old. See the scheduled() handler in src/index.js.
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
   // The bitllm.org zone is in this account (Zjj1993, 5119540a…). These are
   // zone routes, not custom domains: the existing proxied records stay, and
   // the Worker answers for both hostnames at the edge.
