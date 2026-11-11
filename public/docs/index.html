@@ -120,11 +120,11 @@
     <p>Every node subscribes to a libp2p pubsub topic, but not every node announces. A client-only node stays silent, a serving node publishes an announce every 10 seconds, and a public relay with no model publishes one that lists no models. The announce is small and unsigned beyond transport identity:</p>
     <pre><code>{
   "v": "v0.5.0",
-  "models": ["Qwen/Qwen3.8-Flash-Next"],
+  "models": ["nvidia/GLM-5.3-Flash-NVFP4"],
   "free": 1, "max": 2, "q": 1,
   "relay": true,
   "loc": "u33",
-  "weights": {"Qwen/Qwen3.8-Flash-Next": "&lt;64 hex digits&gt;"}
+  "weights": {"nvidia/GLM-5.3-Flash-NVFP4": "&lt;64 hex digits&gt;"}
 }</code></pre>
     <p><code>v</code> is the release tag. <code>q</code> and <code>relay</code> appear only when there is a queue or the node is public. <code>loc</code> is a three-character geohash cell, sent only with <code>--location</code>. A weight hash is the 64 lowercase hex digits that <code>bitllm hash-model</code> prints, sent only with <code>--weights</code>.</p>
     <p>An announce is trusted only while it is fresh: a peer last seen within <code>3 × announce interval + 5 s</code> (about 35 seconds) is a routing candidate. That gives fast failure detection without a heartbeat server. A server that stops answering goes quiet on its next failed upstream check, and clients stop choosing it within three periods.</p>
@@ -132,7 +132,7 @@
     <h3>DHT: who serves this model, ever</h3>
     <p>Gossip may not have reached a node that just started, so every serving node also publishes a provider record under a key derived from the model name:</p>
     <pre><code>key = sha256("bitllm/model/" + model)</code></pre>
-    <p>The key keeps the exact model string, including case and slashes, so <code>Qwen/Qwen3.8-Flash-Next</code> is a different key from <code>qwen/Qwen3.8-Flash-Next</code>. A client with no candidates for a model asks the DHT for its providers and connects to them; this is the cold-start path. Provider records are refreshed every two minutes and expire after a day, so an offline node eventually leaves the index.</p>
+    <p>The key keeps the exact model string, including case and slashes, so <code>nvidia/GLM-5.3-Flash-NVFP4</code> is a different key from <code>NVIDIA/GLM-5.3-Flash-NVFP4</code>. A client with no candidates for a model asks the DHT for its providers and connects to them; this is the cold-start path. Provider records are refreshed every two minutes and expire after a day, so an offline node eventually leaves the index.</p>
 
     <p>The DHT stores routing and provider records, not model files and not inference results. It is a phone book, not a switchboard.</p>
 
@@ -185,8 +185,8 @@
     <h2 id="models">Model names</h2>
     <p>A model name is the string clients send. Two machines that announce the same string are interchangeable for it: the gateway picks one, and if it stops answering it tries another. The name must therefore identify the weights, not the machine.</p>
     <ol>
-      <li><strong>A public model uses its exact Hugging Face repo id.</strong> <code>Qwen/Qwen3.8-Flash-Next</code>, with the slash and the case as published. Independent hosts that serve the same repository match without a central registry, and one can replace another when it goes down.</li>
-      <li><strong>A fine-tune or quant uses the repo id of the actual weights</strong> when it has one; otherwise the base id plus a suffix that says what changed. One name means one set of weights. Example: <code>Qwen/Qwen3.8-Flash-Next-fp4-alesha</code>.</li>
+      <li><strong>A public model uses its exact Hugging Face repo id.</strong> <code>nvidia/GLM-5.3-Flash-NVFP4</code>, with the slash and the case as published. Independent hosts that serve the same repository match without a central registry, and one can replace another when it goes down.</li>
+      <li><strong>A fine-tune or quant uses the repo id of the actual weights</strong> when it has one; otherwise the base id plus a suffix that says what changed. One name means one set of weights. Example: <code>junmo-k/GLM-5.3-Flash-FP4-Local-Piecrust-Abliterated-MLX</code>.</li>
       <li><strong>A private or brand-new model can use any stable name.</strong> Nothing is registered first: the node announces it, <code>GET /v1/models</code> lists it, and the dashboard lets a user pick it. <code>--model local=public</code> exists only for the case where the server's local id is not the name clients should use.</li>
     </ol>
 

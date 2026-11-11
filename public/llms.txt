@@ -95,7 +95,7 @@ Common defaults: vLLM 8000, SGLang 30000, llama.cpp 8080, Ollama 11434, LM Studi
 curl -s http://127.0.0.1:PORT/v1/models
 ```
 
-Map that local id to a network name. A public model uses its **exact Hugging Face repo id**, slash and case as published, so independent hosts serving the same repo match and can replace each other. A quant or fine-tune uses the repo id of the actual weights plus a suffix, for example `Qwen/Qwen3.8-Flash-Next-fp4-alesha`. A private or brand-new model can use any stable name; nothing needs to be registered first.
+Map that local id to a network name. A public model uses its **exact Hugging Face repo id**, slash and case as published, so independent hosts serving the same repo match and can replace each other. A quant or fine-tune uses the repo id of the actual weights (for example `junmo-k/GLM-5.3-Flash-FP4-Local-Piecrust-Abliterated-MLX`), or the base id plus a suffix when the weights have no repo of their own. A private or brand-new model can use any stable name; nothing needs to be registered first.
 
 The table below lists reference names the beta has used. It is a convenience, not a gate.
 
@@ -103,8 +103,7 @@ The table below lists reference names the beta has used. It is a convenience, no
 |---|---|
 | `deepseek-v4.1-flash-1017` | DeepSeek V4.1 Flash, 1017 release, official weights |
 | `deepseek-v4.1-flash-1017-heretic` | the same model with refusals removed |
-| `qwen3.8-flash-next-fp4-alesha` | Qwen3.8 Flash-Next, NVIDIA FP4-Local quant, alesha uncensored fine-tune |
-| `qwen3.8-flash-next-nvfp4-lil` | Qwen3.8 Flash-Next, local-inference-lab NVFP4-MXFP8-CSF-QAD quant, fixed sampling (NVIDIA Flare) |
+| `junmo-k/GLM-5.3-Flash-FP4-Local-Piecrust-Abliterated-MLX` | GLM 5.3 Flash, NVIDIA FP4-Local quant, Piecrust abliterated (uncensored), MLX on Apple silicon |
 
 Names are `<model>[-<quant>][-<source>]`; the model part keeps the Hub id's case and slashes. One network name must mean one set of weights. If the server's id already is the right network name, do not pass `--model` at all.
 

@@ -212,7 +212,7 @@ API key:   bitllm  (any value)</pre>
   12D3KooWD…kP9tZ  out  relay   203.0.113.11
   12D3KooWQ…b4rLe  in   direct  198.51.100.7
 <span class="d">────────────────────────────────────────────────────────────</span>
-<span class="i">SERVING</span>  Qwen/Qwen3.8-Flash-Next                 upstream up
+<span class="i">SERVING</span>  nvidia/GLM-5.3-Flash-NVFP4              upstream up
 <span class="d">────────────────────────────────────────────────────────────</span>
 <span class="i">WORK EXCHANGED</span>                                       credits
                     did for you     you did         net
@@ -346,7 +346,7 @@ credits = prompt/4 + completion
       <p class="sub">Two machines with one name are interchangeable. If one stops answering, the gateway tries another.</p>
 
       <div class="console">
-        <div class="console-body"><pre class="draw" role="img" aria-label="Two hosts announce one model name. If the first stops answering, the gateway tries the second."><span class="i">Qwen/Qwen3.8-Flash-Next</span>
+        <div class="console-body"><pre class="draw" role="img" aria-label="Two hosts announce one model name. If the first stops answering, the gateway tries the second."><span class="i">nvidia/GLM-5.3-Flash-NVFP4</span>
 <span class="d">├─</span> host a   stops answering
 <span class="d">└─</span> host b   the gateway tries this one
 <span class="d">// no failover after the first byte</span></pre></div>
@@ -355,7 +355,7 @@ credits = prompt/4 + completion
       <div class="grid three gap">
         <div class="card">
           <h3>Use the Hugging Face id</h3>
-          <p><code>Qwen/Qwen3.8-Flash-Next</code>, exactly as published. Hosts of the same repo match without a registry.</p>
+          <p><code>nvidia/GLM-5.3-Flash-NVFP4</code>, exactly as published. Hosts of the same repo match without a registry.</p>
         </div>
         <div class="card">
           <h3>Name the actual weights</h3>
