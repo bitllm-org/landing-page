@@ -234,6 +234,8 @@
       <li><strong>A location is opt-in.</strong> <code>--location LAT,LON</code> is turned into a three-character geohash cell (about 156 km by 156 km) before it leaves the machine. The point itself is never announced. Without it, the node is counted as "no location".</li>
       <li><strong>IP geolocation is not used</strong>, on purpose: it would place people who never asked, and for relayed nodes it would often place the relay instead.</li>
       <li><strong>Receipts are pseudonymous.</strong> A client signs with one key per server, rotated every 30 days, so a receipt links a server to work but not to the person who asked. That server can link one client's jobs to each other.</li>
+      <li><strong>A host can keep a record of who it served.</strong> With <code>--attribution-log</code> a server writes the node id and address behind each job, and the token counts, to a local file. It does not write the prompt or the answer. It is off by default.</li>
+      <li><strong>A host decides whom it serves.</strong> Do not use the network to attack systems you have no permission to test, or to harm people. The machines belong to people who share them for free, and a host can refuse any node with <code>--deny</code>. What a host does when it finds abuse is in <a href="https://github.com/bitllm-org/bitllm/blob/main/docs/abuse.md">docs/abuse.md</a>.</li>
     </ul>
 
     <h2 id="failures">Failure modes</h2>
