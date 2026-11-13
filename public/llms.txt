@@ -9,6 +9,7 @@ This file is written for AI agents setting BitLLM up on behalf of a user. Follow
 - The machine that serves a request reads the prompt in plain text. Do not send secrets, credentials or private data through the network.
 - Peers can learn the user's IP address, from a direct connection or from the listen addresses a node sends when hole punching. If that matters to the user, run BitLLM behind a VPN.
 - The node binds the p2p port on all network interfaces. UPnP (asks the router to forward that port) and mDNS (looks for peers on the local network) are on by default. `--upnp=false`, `--mdns=false` and `--ipv6=false` turn these off.
+- The network is not for attacking systems the user has no permission to test, or for harming people. A host can refuse any node, and may record the node id and address behind the jobs it serves (never the prompt).
 - Only the user can sign invites or link a wallet. Never ask for or handle their seed phrase.
 
 ## Task 1: install
