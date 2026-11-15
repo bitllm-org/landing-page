@@ -154,7 +154,7 @@
       <li><strong>Parse and bound.</strong> The body is read up to a fixed limit, the model is read, and image-heavy requests are defused for older peers. Malformed JSON is a <code>400</code>.</li>
       <li><strong>Own model stays here.</strong> If this node shares the requested model, the request is answered locally. It never leaves the machine, costs nothing, and is not metered as network work. If the local server is down, the gateway answers <code>503</code>. With <code>--peer-fallback</code> it tries peers that serve the same model instead, and those peers can read the request.</li>
       <li><strong>Candidates.</strong> Peers are filtered by fresh announce, by model, by weight hash when the model manifest records one, and by audit status. They are ranked by free slots, queue depth and measured latency. A peer never dialed has no latency and ranks behind a peer that just answered.</li>
-      <li><strong>Try up to three.</strong> For each candidate the gateway opens an inference stream with a bounded wait. A server with no free slot keeps the request in its own queue; the client waits up to its own deadline. A server that refuses the caller outright (<code>403</code>, an allow list) is skipped for the rest of the request.</li>
+      <li><strong>Try up to three.</strong> For each candidate the gateway opens an inference stream with a bounded wait. A server with no free slot keeps the request in its own queue; the client waits up to its own deadline. A server that refuses the caller outright (<code>403</code>, an allow or deny list) is skipped for the rest of the request.</li>
       <li><strong>Stream.</strong> The serving node forwards the upstream response. Tokens are written to the local client as they arrive; a disconnect on either side tears down the stream. The response carries <code>X-Bitllm-Peer</code>, the peer id that answered.</li>
       <li><strong>Retry or fail.</strong> If every attempt was busy, the gateway backs off, refreshes the candidate list, and tries again until its deadline. If nobody serves the name, it returns <code>503 no peer serves model X</code>. If every server refused, it returns the status they gave, with <code>all peers refused</code>. If everyone failed, it returns <code>502 all peers failed</code>.</li>
     </ol>
@@ -177,6 +177,8 @@
       <li><strong>Token cap.</strong> <code>--max-tokens</code> bounds new tokens per peer request (default 32768). A peer gets one choice per request; <code>n</code> is dropped.</li>
       <li><strong>Quotas.</strong> <code>--free-daily</code> sets a per-member daily quota; the default is unlimited. A contributor has no quota on a server that asked its node for a job in the last 7 days.</li>
       <li><strong>Allow lists.</strong> <code>--allow PEER_ID</code> serves only the listed peers and refuses everyone else. The error names the caller's peer id, so the owner can add it.</li>
+      <li><strong>Deny list.</strong> <code>--deny PEER_ID</code> refuses one node while everyone else is served as before, including on an <code>--open</code> server. A v0.5.1+ client treats the refusal as permanent and tries another server.</li>
+      <li><strong>Attribution log.</strong> <code>--attribution-log</code> writes one local line per countersigned receipt with the node id, address and token counts, never the prompt or the answer. Off by default.</li>
       <li><strong>Weights.</strong> <code>--weights NAME=HASH</code> states what the server loads, from <code>bitllm hash-model DIR</code>. It is a claim, not a proof. When the model manifest records a canonical hash, clients skip peers that announce a different one.</li>
     </ul>
 
@@ -210,7 +212,7 @@
       <li>An <strong>invite</strong> is a signature from an Ethereum account. Nodes gossip invites; there is no membership server. Revoking an account takes membership from it and from everyone it invited; they are then served like uninvited nodes.</li>
       <li>A member is served on any free slot. An uninvited node is served only when a server is idle, unless its owner starts with <code>--open</code>.</li>
       <li>Sharing makes you a <strong>contributor</strong>: 10 invites instead of 3 once your nodes have served, and no quota on a server that asked your node for a job in the last 7 days.</li>
-      <li>A server owner can still restrict serving to an allow list (<code>--allow</code>) or set a daily quota. Those are per-server decisions, not network policy.</li>
+      <li>A server owner can still restrict serving to an allow list (<code>--allow</code>), refuse one node (<code>--deny</code>), or set a daily quota. Those are per-server decisions, not network policy.</li>
     </ul>
     <p>The membership root is one Ethereum address in the binary's defaults; <code>--roots</code> replaces it. A node with no roots treats every node as a member, which is useful for a private test network.</p>
 
@@ -234,7 +236,7 @@
       <li><strong>A location is opt-in.</strong> <code>--location LAT,LON</code> is turned into a three-character geohash cell (about 156 km by 156 km) before it leaves the machine. The point itself is never announced. Without it, the node is counted as "no location".</li>
       <li><strong>IP geolocation is not used</strong>, on purpose: it would place people who never asked, and for relayed nodes it would often place the relay instead.</li>
       <li><strong>Receipts are pseudonymous.</strong> A client signs with one key per server, rotated every 30 days, so a receipt links a server to work but not to the person who asked. That server can link one client's jobs to each other.</li>
-      <li><strong>A host can keep a record of who it served.</strong> With <code>--attribution-log</code> a server writes the node id and address behind each job, and the token counts, to a local file. It does not write the prompt or the answer. It is off by default.</li>
+      <li><strong>A host can keep a record of who it served.</strong> With <code>--attribution-log</code> a server writes the node id and address behind each receipt it countersigns, and the token counts, to a local file. It does not write the prompt or the answer, and a job whose client does not send a receipt back leaves no line. It is off by default.</li>
       <li><strong>A host decides whom it serves.</strong> Do not use the network to attack systems you have no permission to test, or to harm people. The machines belong to people who share them for free, and a host can refuse any node with <code>--deny</code>. What a host does when it finds abuse is in <a href="https://github.com/bitllm-org/bitllm/blob/main/docs/abuse.md">docs/abuse.md</a>.</li>
     </ul>
 
@@ -326,6 +328,8 @@
           <tr><td><code>--audit-serve</code></td><td>offer this node as an auditor, if its server returns prompt logprobs</td></tr>
           <tr><td><code>--roots ADDR</code></td><td>root account of the invite tree, for private networks and tests</td></tr>
           <tr><td><code>--allow PEER_ID</code></td><td>serve only listed peers</td></tr>
+          <tr><td><code>--deny PEER_ID</code></td><td>refuse one node; repeatable</td></tr>
+          <tr><td><code>--attribution-log</code></td><td>record the node id and address behind each countersigned receipt, never the prompt</td></tr>
           <tr><td><code>--open</code></td><td>also serve uninvited nodes on spare slots</td></tr>
           <tr><td><code>--open-slots N</code></td><td>with <code>--open</code>: most slots uninvited nodes may hold at once</td></tr>
           <tr><td><code>--open-daily N</code></td><td>with <code>--open</code>: credits all uninvited nodes together may use per UTC day</td></tr>
