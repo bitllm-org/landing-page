@@ -145,10 +145,10 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
   const NS = "http://www.w3.org/2000/svg";
   let data = null, picked = null;
 
-  // A GitHub workflow publishes about every twenty minutes and can start late, so
-  // 15 minutes is an ordinary age and this allows for a missed run as well. The
-  // key expires an hour after the last write, which then reads as no snapshot.
-  const STALE_AFTER = 30 * 60 * 1000;
+  // The publisher lands a snapshot every three to four minutes and the Worker
+  // cron asks for a run whenever one is late, so fifteen minutes without a
+  // new snapshot means something is actually wrong.
+  const STALE_AFTER = 15 * 60 * 1000;
   const isFresh = d => {
     const t = d && d.updated ? new Date(d.updated).getTime() : NaN;
     return !isNaN(t) && Date.now() - t < STALE_AFTER;

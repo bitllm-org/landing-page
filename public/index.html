@@ -128,7 +128,7 @@
         <h2>The network right now</h2>
         <span class="head-meta" id="map-time">loading...</span>
       </div>
-      <p class="sub">Updated about every twenty minutes. Operators declare their own location. Nothing is guessed from an IP.</p>
+      <p class="sub">Updated every few minutes. Operators declare their own location. Nothing is guessed from an IP.</p>
 
       <div class="stats" aria-label="Live network totals">
         <div class="stat"><b class="big" id="stat-nodes">-</b><span>nodes serving</span></div>
@@ -317,7 +317,7 @@ credits = prompt/4 + completion
         <dt>auditor</dt>
         <dd><span>--audit uses a node the maintainers run by default. --auditor replaces it.</span></dd>
         <dt>KV</dt>
-        <dd><span>A GitHub workflow writes this site's map to Cloudflare KV about every twenty minutes. The key expires one hour after the last write.</span></dd>
+        <dd><span>A Cloudflare Worker cron asks a GitHub workflow to write this site's map to KV whenever the snapshot is more than three minutes old, so it lands every three to four minutes. The key expires one hour after the last write.</span></dd>
       </dl>
       <p class="more"><a href="/docs/">Read the whole architecture →</a></p>
     </section>
