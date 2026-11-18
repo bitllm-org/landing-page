@@ -5,9 +5,9 @@
 const REPO = "bitllm-org/bitllm";
 const WORKFLOW = "network-map.yml";
 // A published run takes about a minute. At one cron tick a minute and this
-// threshold, a new snapshot lands every three to four minutes, which is one
-// KV write per cycle and about 400 a day, well under the free tier of 1,000.
-const STALE_MS = 3 * 60 * 1000;
+// threshold, a new snapshot lands every three minutes, which is one KV write
+// per cycle and about 480 a day, well under the free tier of 1,000.
+const STALE_MS = 2 * 60 * 1000;
 // A workflow dispatch takes up to a minute to publish, so without this the
 // next two ticks would queue runs for a snapshot that is already on its way.
 // The cache is per data centre, so it is a hint; a duplicate would only cost
