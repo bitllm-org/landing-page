@@ -4,9 +4,15 @@
 // scheduled job in the node repo writes to KV, and anything no file matches.
 const REPO = "bitllm-org/bitllm";
 const WORKFLOW = "network-map.yml";
-// With this and a five minute cron, the map updates about every twenty minutes. Only dispatch when the snapshot
-// is older than this, so a working GitHub cron never gets a second run.
-const STALE_MS = 15 * 60 * 1000;
+// A published run takes about a minute. At one cron tick a minute and this
+// threshold, a new snapshot lands every three to four minutes, which is one
+// KV write per cycle and about 400 a day, well under the free tier of 1,000.
+const STALE_MS = 3 * 60 * 1000;
+// A workflow dispatch takes up to a minute to publish, so without this the
+// next two ticks would queue runs for a snapshot that is already on its way.
+// The cache is per data centre, so it is a hint; a duplicate would only cost
+// one extra KV write, and the workflow serialises itself anyway.
+const LOCK = "https://bitllm.org/__dispatch-lock";
 const EMPTY = JSON.stringify({
   updated: null,
   nodes: 0,
@@ -57,15 +63,31 @@ export default {
   // is the dependable trigger: it asks for a run whenever the KV snapshot has
   // gone stale. A duplicate run is harmless, the workflow serialises itself.
   async scheduled(controller, env, ctx) {
-    const at = new Date().toISOString();
     const outcome = await dispatchIfStale(env);
-    // One small key, one write per tick: enough to tell whether the cron runs
-    // at all and what it decided. The map itself keeps its own budget.
-    ctx.waitUntil(env.NETWORK.put("cron", JSON.stringify({ at, outcome })));
+    console.log("map cron:", outcome);
+    // The snapshot itself shows whether the loop works. The probe exists to
+    // tell "the cron stopped running at all" apart from "publishing broke",
+    // so it writes once every fifteen ticks, not every tick.
+    if (new Date().getUTCMinutes() % 15 === 0) {
+      ctx.waitUntil(
+        env.NETWORK.put("cron", JSON.stringify({ at: new Date().toISOString(), outcome })),
+      );
+    }
   },
 };
 
-// Returns what it did, for the probe the cron writes back to KV.
+async function takeLock() {
+  try {
+    const cache = caches.default;
+    if (await cache.match(LOCK)) return false;
+    await cache.put(LOCK, new Response("1", { headers: { "cache-control": "max-age=150" } }));
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+// Returns what it did, for the log and the probe the cron writes to KV.
 async function dispatchIfStale(env) {
   let updated = 0;
   try {
@@ -76,6 +98,7 @@ async function dispatchIfStale(env) {
   }
   const age = Math.round((Date.now() - updated) / 1000);
   if (Date.now() - updated < STALE_MS) return `fresh ${age}s`;
+  if (!(await takeLock())) return `waiting on a run, ${age}s`;
 
   const res = await fetch(
     `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`,
