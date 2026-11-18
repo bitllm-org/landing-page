@@ -16,7 +16,7 @@
   ],
   // Keeps /network.json fresh: a one minute cron dispatches the node repo's
   // workflow whenever the snapshot is more than three minutes old, so the map
-  // lands every three to four minutes. See scheduled() in src/index.js.
+  // lands about every three minutes. See scheduled() in src/index.js.
   "triggers": {
     "crons": ["*/1 * * * *"]
   },
