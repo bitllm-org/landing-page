@@ -145,7 +145,7 @@ document.getElementById("model-list").addEventListener("change", e => { model = 
   const NS = "http://www.w3.org/2000/svg";
   let data = null, picked = null;
 
-  // The publisher lands a snapshot every three minutes and the Worker
+  // The publisher lands a snapshot about every four minutes and the Worker
   // cron asks for a run whenever one is late, so fifteen minutes without a
   // new snapshot means something is actually wrong.
   const STALE_AFTER = 15 * 60 * 1000;
