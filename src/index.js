@@ -5,9 +5,10 @@
 const REPO = "bitllm-org/bitllm";
 const WORKFLOW = "network-map.yml";
 // A published run takes about a minute. At one cron tick a minute and this
-// threshold, a new snapshot lands every three minutes, which is one KV write
-// per cycle and about 480 a day, well under the free tier of 1,000.
-const STALE_MS = 2 * 60 * 1000;
+// threshold, a new snapshot lands about every four minutes, which is one KV
+// write per cycle and about 360 a day, staying under the 50% alert threshold
+// (500) of the 1,000-write free tier.
+const STALE_MS = 3 * 60 * 1000;
 // A workflow dispatch takes up to a minute to publish, so without this the
 // next two ticks would queue runs for a snapshot that is already on its way.
 // The cache is per data centre, so it is a hint; a duplicate would only cost
@@ -65,10 +66,9 @@ export default {
   async scheduled(controller, env, ctx) {
     const outcome = await dispatchIfStale(env);
     console.log("map cron:", outcome);
-    // The snapshot itself shows whether the loop works. The probe exists to
-    // tell "the cron stopped running at all" apart from "publishing broke",
-    // so it writes once every fifteen ticks, not every tick.
-    if (new Date().getUTCMinutes() % 15 === 0) {
+    // The snapshot itself shows whether the loop works. Only write the probe
+    // key when dispatch fails, avoiding 96 extra KV writes/day on healthy ticks.
+    if (outcome.startsWith("failed ")) {
       ctx.waitUntil(
         env.NETWORK.put("cron", JSON.stringify({ at: new Date().toISOString(), outcome })),
       );
