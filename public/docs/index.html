@@ -188,7 +188,7 @@
     <p>A model name is the string clients send. Two machines that announce the same string are interchangeable for it: the gateway picks one, and if it stops answering it tries another. The name must therefore identify the weights, not the machine.</p>
     <ol>
       <li><strong>A public model uses its exact Hugging Face repo id.</strong> <code>nvidia/GLM-5.3-Flash-NVFP4</code>, with the slash and the case as published. Independent hosts that serve the same repository match without a central registry, and one can replace another when it goes down.</li>
-      <li><strong>A fine-tune or quant uses the repo id of the actual weights</strong> when it has one; otherwise the base id plus a suffix that says what changed. One name means one set of weights. Example: <code>junmo-k/GLM-5.3-Flash-FP4-Local-Piecrust-Abliterated-MLX</code>.</li>
+      <li><strong>A fine-tune or quant uses the repo id of the actual weights</strong> when it has one; otherwise the base id plus a suffix that says what changed. One name means one set of weights. Example: <code>Hygaard/Inkling-2-Small-oQe-3.07bpw-MLX</code>.</li>
       <li><strong>A private or brand-new model can use any stable name.</strong> Nothing is registered first: the node announces it, <code>GET /v1/models</code> lists it, and the dashboard lets a user pick it. <code>--model local=public</code> exists only for the case where the server's local id is not the name clients should use.</li>
     </ol>
 

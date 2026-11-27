@@ -96,7 +96,7 @@ Common defaults: vLLM 8000, SGLang 30000, llama.cpp 8080, Ollama 11434, LM Studi
 curl -s http://127.0.0.1:PORT/v1/models
 ```
 
-Map that local id to a network name. A public model uses its **exact Hugging Face repo id**, slash and case as published, so independent hosts serving the same repo match and can replace each other. A quant or fine-tune uses the repo id of the actual weights (for example `junmo-k/GLM-5.3-Flash-FP4-Local-Piecrust-Abliterated-MLX`), or the base id plus a suffix when the weights have no repo of their own. A private or brand-new model can use any stable name; nothing needs to be registered first.
+Map that local id to a network name. A public model uses its **exact Hugging Face repo id**, slash and case as published, so independent hosts serving the same repo match and can replace each other. A quant or fine-tune uses the repo id of the actual weights (for example `Hygaard/Inkling-2-Small-oQe-3.07bpw-MLX`), or the base id plus a suffix when the weights have no repo of their own. A private or brand-new model can use any stable name; nothing needs to be registered first.
 
 The table below lists reference names the beta has used. It is a convenience, not a gate.
 
@@ -104,7 +104,7 @@ The table below lists reference names the beta has used. It is a convenience, no
 |---|---|
 | `deepseek-v4.1-flash-1017` | DeepSeek V4.1 Flash, 1017 release, official weights |
 | `deepseek-v4.1-flash-1017-heretic` | the same model with refusals removed |
-| `junmo-k/GLM-5.3-Flash-FP4-Local-Piecrust-Abliterated-MLX` | GLM 5.3 Flash, NVIDIA FP4-Local quant, Piecrust abliterated (uncensored), MLX on Apple silicon |
+| `Hygaard/Inkling-2-Small-oQe-3.07bpw-MLX` | Inkling 2 Small (Thinking Machines Lab), Hygaard's oQe 3.07-bit MLX quant on Apple silicon; reasoning model, accepts images, 128K context |
 
 Names are `<model>[-<quant>][-<source>]`; the model part keeps the Hub id's case and slashes. One network name must mean one set of weights. If the server's id already is the right network name, do not pass `--model` at all.
 
